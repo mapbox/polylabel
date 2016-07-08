@@ -1,0 +1,12 @@
+{
+  "name": "polylabel",
+  "version": "1.0.0",
+  "description": "A JS library for finding optimal label position inside a polygon",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Vladimir Agafonkin",
+  "license": "ISC"
+}
