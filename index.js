@@ -22,7 +22,7 @@ function polylabel(points, precision, debug) {
     // cover polygon with initial cells
     var width = maxX - minX;
     var height = maxY - minY;
-    var cellSize = Math.min(width, height);
+    var cellSize = Math.min(width, height) / 4;
     var h = cellSize / 2;
     var cells = [];
 
@@ -32,7 +32,9 @@ function polylabel(points, precision, debug) {
         }
     }
 
-    var bestCell, bestSize;
+    var bestCell = getCentroidCell(points);
+    bestCell.d = pointToPolygonDist(bestCell.x, bestCell.y, points);
+
     var error = h * Math.sqrt(2);
 
     while (true) {
@@ -41,7 +43,7 @@ function polylabel(points, precision, debug) {
             var cell = cells[i];
             cell.d = pointToPolygonDist(cell.x, cell.y, points);
 
-            if (!bestCell || cell.d > bestCell.d) {
+            if (cell.d > bestCell.d) {
                 bestCell = cell;
             }
         }
@@ -95,6 +97,22 @@ function pointToPolygonDist(x, y, points) {
     }
 
     return (inside ? 1 : -1) * Math.sqrt(minDistSq);
+}
+
+function getCentroidCell(points) {
+    var area = 0;
+    var x = 0;
+    var y = 0;
+
+    for (var i = 0, len = points.length, j = len - 1; i < len; j = i++) {
+        var a = points[i];
+        var b = points[j];
+        var f = a[0] * b[1] - b[0] * a[1];
+        x += (a[0] + b[0]) * f;
+        y += (a[1] + b[1]) * f;
+        area += f * 3;
+    }
+    return new Cell(x / area, y / area);
 }
 
 function getSegDistSq(px, py, a, b) {
