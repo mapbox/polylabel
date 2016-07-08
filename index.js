@@ -37,8 +37,11 @@ function polylabel(polygon, precision, debug) {
     bestCell.d = pointToPolygonDist(bestCell.x, bestCell.y, polygon);
 
     var error = h * Math.sqrt(2);
+    var numProbes = 0;
 
     while (true) {
+        numProbes += cells.length;
+
         // calculate cell distances, keeping track of global max distance
         for (i = 0; i < cells.length; i++) {
             var cell = cells[i];
@@ -72,7 +75,10 @@ function polylabel(polygon, precision, debug) {
         error /= 2;
     }
 
-    if (debug) console.log('best distance: ' + bestCell.d);
+    if (debug) {
+        console.log('num probes: ' + numProbes);
+        console.log('best distance: ' + bestCell.d);
+    }
 
     return [bestCell.x, bestCell.y];
 }
