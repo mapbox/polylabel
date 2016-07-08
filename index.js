@@ -22,16 +22,13 @@ function polylabel(points, precision, debug) {
     // cover polygon with initial cells
     var width = maxX - minX;
     var height = maxY - minY;
-    var h = Math.min(width, height) / 2;
+    var cellSize = Math.min(width, height);
+    var h = cellSize / 2;
     var cells = [];
 
-    if (width > height) {
-        for (var x = minX; x < width; x += height) {
-            cells.push(new Cell(x + h, minY + h));
-        }
-    } else {
-        for (var y = minY; y < height; y += width) {
-            cells.push(new Cell(minX + h, y + h));
+    for (var x = minX; x < maxX; x += cellSize) {
+        for (var y = minY; y < maxY; y += cellSize) {
+            cells.push(new Cell(x + h, y + h));
         }
     }
 
@@ -71,6 +68,8 @@ function polylabel(points, precision, debug) {
         cells = childCells;
         error /= 2;
     }
+
+    if (debug) console.log('best distance: ' + bestCell.d);
 
     return [bestCell.x, bestCell.y];
 }
