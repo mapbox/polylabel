@@ -22,7 +22,7 @@ function polylabel(points, precision, debug) {
     // cover polygon with initial cells
     var width = maxX - minX;
     var height = maxY - minY;
-    var cellSize = Math.min(width, height) / 4;
+    var cellSize = Math.min(width, height);
     var h = cellSize / 2;
     var cells = [];
 
@@ -39,7 +39,7 @@ function polylabel(points, precision, debug) {
 
     while (true) {
         // calculate cell distances, keeping track of global max distance
-        for (var i = 0; i < cells.length; i++) {
+        for (i = 0; i < cells.length; i++) {
             var cell = cells[i];
             cell.d = pointToPolygonDist(cell.x, cell.y, points);
 
@@ -56,8 +56,8 @@ function polylabel(points, precision, debug) {
         h /= 2;
 
         var childCells = [];
-        for (var i = 0; i < cells.length; i++) {
-            var cell = cells[i];
+        for (i = 0; i < cells.length; i++) {
+            cell = cells[i];
             // if a cell potentially contains a better solution than the current best, subdivide
             if (cell.d + error > bestCell.d) {
                 childCells.push(new Cell(cell.x - h, cell.y - h));
