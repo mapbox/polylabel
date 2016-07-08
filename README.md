@@ -9,3 +9,5 @@ Unlike the one in the paper, this algorithm:
 
 - guarantees finding global optimum within the given precision
 - is many times faster (6-20x)
+
+<img src="https://cloud.githubusercontent.com/assets/25395/16695332/e0b71a24-4547-11e6-868f-6c85744bc083.png">
