@@ -2,9 +2,10 @@
 
 module.exports = polylabel;
 
-function polylabel(points, precision) {
+function polylabel(points, precision, debug) {
     precision = precision || 1.0;
 
+    // find the bounding box
     var minX = Infinity;
     var minY = Infinity;
     var maxX = -Infinity;
@@ -18,60 +19,61 @@ function polylabel(points, precision) {
         if (p[1] > maxY) maxY = p[1];
     }
 
+    // cover polygon with initial cells
     var width = maxX - minX;
     var height = maxY - minY;
-    var cellSize = Math.min(width, height);
+    var h = Math.min(width, height) / 2;
     var cells = [];
 
     if (width > height) {
         for (var x = minX; x < width; x += height) {
-            cells.push(new Cell(x, minY));
+            cells.push(new Cell(x + h, minY + h));
         }
     } else {
         for (var y = minY; y < height; y += width) {
-            cells.push(new Cell(minX, y));
+            cells.push(new Cell(minX + h, y + h));
         }
     }
 
     var bestCell, bestSize;
-    var error = cellSize * Math.sqrt(2) / 2;
+    var error = h * Math.sqrt(2);
 
     while (true) {
-        var halfSize = cellSize / 2;
-
         // calculate cell distances, keeping track of global max distance
+        console.time('distances');
         for (var i = 0; i < cells.length; i++) {
             var cell = cells[i];
-            cell.d = pointToPolygonDist(cell.x + halfSize, cell.y + halfSize, points);
+            cell.d = pointToPolygonDist(cell.x, cell.y, points);
 
             if (!bestCell || cell.d > bestCell.d) {
                 bestCell = cell;
-                bestSize = cellSize;
             }
         }
 
-        console.log('best %d, error %d, cells: %d', bestCell.d.toFixed(2), error.toFixed(2), cells.length);
+        if (debug) console.log('cells processed: %d, best so far %d, error %d',
+            cells.length, bestCell.d.toFixed(2), error.toFixed(2));
 
         if (error <= precision) break;
+
+        h /= 2;
 
         var childCells = [];
         for (var i = 0; i < cells.length; i++) {
             var cell = cells[i];
             // if a cell potentially contains a better solution than the current best, subdivide
             if (cell.d + error > bestCell.d) {
-                childCells.push(new Cell(cell.x, cell.y));
-                childCells.push(new Cell(cell.x + halfSize, cell.y));
-                childCells.push(new Cell(cell.x, cell.y + halfSize));
-                childCells.push(new Cell(cell.x + halfSize, cell.y + halfSize));
+                childCells.push(new Cell(cell.x - h, cell.y - h));
+                childCells.push(new Cell(cell.x + h, cell.y - h));
+                childCells.push(new Cell(cell.x - h, cell.y + h));
+                childCells.push(new Cell(cell.x + h, cell.y + h));
             }
         }
 
         cells = childCells;
-        cellSize = halfSize;
         error /= 2;
     }
 
-    return [bestCell.x + bestSize / 2, bestCell.y + bestSize / 2];
+    return [bestCell.x, bestCell.y];
 }
 
 function Cell(x, y) {
@@ -122,35 +124,4 @@ function getSegDistSq(px, py, a, b) {
     dy = py - y;
 
     return dx * dx + dy * dy;
-}
-
-function simplifyDPStep(points, first, last, sqTolerance, simplified) {
-    var maxSqDist = sqTolerance,
-        index;
-
-    for (var i = first + 1; i < last; i++) {
-        var sqDist = getSegDistSq(points[i][0], points[i][1], points[first], points[last]);
-
-        if (sqDist > maxSqDist) {
-            index = i;
-            maxSqDist = sqDist;
-        }
-    }
-
-    if (maxSqDist > sqTolerance) {
-        if (index - first > 1) simplifyDPStep(points, first, index, sqTolerance, simplified);
-        simplified.push(points[index]);
-        if (last - index > 1) simplifyDPStep(points, index, last, sqTolerance, simplified);
-    }
-}
-
-// simplification using Ramer-Douglas-Peucker algorithm
-function simplify(points, sqTolerance) {
-    var last = points.length - 1;
-
-    var simplified = [points[0]];
-    simplifyDPStep(points, 0, last, sqTolerance, simplified);
-    simplified.push(points[last]);
-
-    return simplified;
 }

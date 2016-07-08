@@ -6,7 +6,7 @@ var points = [[3116,3071],[3118,3068],[3108,3102],[3100,3105],[3096,3113],[3099,
 console.log('num points: ' + points.length);
 
 console.time('find point');
-var result = polylabel(points, 1);
+var result = polylabel(points, 1, true);
 console.timeEnd('find point');
 
 console.log(result);
