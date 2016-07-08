@@ -40,7 +40,6 @@ function polylabel(points, precision, debug) {
 
     while (true) {
         // calculate cell distances, keeping track of global max distance
-        console.time('distances');
         for (var i = 0; i < cells.length; i++) {
             var cell = cells[i];
             cell.d = pointToPolygonDist(cell.x, cell.y, points);
@@ -50,7 +49,7 @@ function polylabel(points, precision, debug) {
             }
         }
 
-        if (debug) console.log('cells processed: %d, best so far %d, error %d',
+        if (debug) console.log('cells processed: %d, best so far %s, error %s',
             cells.length, bestCell.d.toFixed(2), error.toFixed(2));
 
         if (error <= precision) break;
