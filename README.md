@@ -23,7 +23,7 @@ Polylabel returns the pole of inaccessibility coordinate in `[x, y]` format.
 var p = polylabel(polygon, 1.0);
 ```
 
-<img src="https://cloud.githubusercontent.com/assets/25395/16695332/e0b71a24-4547-11e6-868f-6c85744bc083.png">
+![](https://cloud.githubusercontent.com/assets/25395/16745865/864a0a30-47c0-11e6-87bc-58acac41a520.png)
 
 ### How the algorithm works
 
