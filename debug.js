@@ -1,7 +1,7 @@
 'use strict';
 
 var polylabel = require('./');
-var polygon = require('./test/fixtures/water2.json');
+var polygon = require('./test/fixtures/water1.json');
 
 console.log('num points: ' + [].concat.apply([], polygon).length);
 

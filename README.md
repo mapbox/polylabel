@@ -37,3 +37,5 @@ Then, if the cell potentially contains a better solution that the current best (
 split it into 4 children cells and put them in the queue.
 5. Stop the algorithm when we have exhausted the queue and return the best cell's center as the pole of inaccessibility.
 It will be guaranteed to be a global optimum within the given precision.
+
+![image](https://cloud.githubusercontent.com/assets/25395/16748630/e6b3336c-47cd-11e6-8059-0eeccf22cf6b.png)
