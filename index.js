@@ -7,18 +7,14 @@ module.exports = polylabel;
 function polylabel(polygon, precision, debug) {
     precision = precision || 1.0;
 
-    var minX = Infinity;
-    var minY = Infinity;
-    var maxX = -Infinity;
-    var maxY = -Infinity;
-
     // find the bounding box of the outer ring
+    var minX, minY, maxX, maxY;
     for (var i = 0; i < polygon[0].length; i++) {
         var p = polygon[0][i];
-        if (p[0] < minX) minX = p[0];
-        if (p[1] < minY) minY = p[1];
-        if (p[0] > maxX) maxX = p[0];
-        if (p[1] > maxY) maxY = p[1];
+        if (!i || p[0] < minX) minX = p[0];
+        if (!i || p[1] < minY) minY = p[1];
+        if (!i || p[0] > maxX) maxX = p[0];
+        if (!i || p[1] > maxY) maxY = p[1];
     }
 
     var width = maxX - minX;
@@ -37,7 +33,6 @@ function polylabel(polygon, precision, debug) {
 
     // take centroid as the first best guess
     var bestCell = getCentroidCell(polygon);
-
     var numProbes = cellQueue.length;
 
     while (cellQueue.length) {
@@ -45,18 +40,17 @@ function polylabel(polygon, precision, debug) {
 
         if (cell.d > bestCell.d) {
             bestCell = cell;
-            if (debug) console.log('found best ' + (Math.round(1e4 * cell.d) / 1e4) +
-                ' after ' + numProbes + ' probes');
+            if (debug) console.log('found best %d after %d probes', Math.round(1e4 * cell.d) / 1e4, numProbes);
         }
 
+        // do not drill down further if there's no chance o a better solution
         if (cell.max - bestCell.d <= precision) continue;
 
-        // console.log('splitting ' + cell.d + ', max ' + cell.max);
-
-        // if a cell potentially contains a better solution than the current best, subdivide
         x = cell.x;
         y = cell.y;
         h = cell.h / 2;
+
+        // split the cell into four cells
         cellQueue.push(new Cell(x - h, y - h, h, polygon));
         cellQueue.push(new Cell(x + h, y - h, h, polygon));
         cellQueue.push(new Cell(x - h, y + h, h, polygon));
@@ -77,10 +71,10 @@ function compareMax(a, b) {
 }
 
 function Cell(x, y, h, polygon) {
-    this.x = x; // center x
-    this.y = y; // center y
+    this.x = x; // cell center x
+    this.y = y; // cell center y
     this.h = h; // half the cell size
-    this.d = pointToPolygonDist(x, y, polygon); // distance to polygon
+    this.d = pointToPolygonDist(x, y, polygon); // distance from cell center to polygon
     this.max = this.d + this.h * Math.SQRT2; // max distance to polygon within a cell
 }
 

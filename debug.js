@@ -1,10 +1,12 @@
 'use strict';
 
 var polylabel = require('./');
-var points = require('./test/fixtures/water1.json');
+var polygon = require('./test/fixtures/water2.json');
+
+console.log('num points: ' + [].concat.apply([], polygon).length);
 
 console.time('find point');
-var result = polylabel(points, 1, true);
+var result = polylabel(polygon, 1, true);
 console.timeEnd('find point');
 
 console.log(result);
