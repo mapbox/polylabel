@@ -9,8 +9,8 @@ It's an iterative grid algorithm,
 inspired by [paper by Garcia-Castellanos & Lombardo, 2007](https://sites.google.com/site/polesofinaccessibility/).
 Unlike the one in the paper, this algorithm:
 
-- guarantees finding global optimum within the given precision
-- is many times faster (6-20x)
+- guarantees finding **global optimum** within the given precision
+- is many times faster (10-40x)
 
 ### Usage
 

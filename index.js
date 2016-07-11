@@ -1,5 +1,7 @@
 'use strict';
 
+var Queue = require('tinyqueue');
+
 module.exports = polylabel;
 
 function polylabel(polygon, precision, debug) {
@@ -23,56 +25,43 @@ function polylabel(polygon, precision, debug) {
     var height = maxY - minY;
     var cellSize = Math.min(width, height);
     var h = cellSize / 2;
-    var cells = [];
+
+    var cellQueue = new Queue(null, compareMax);
 
     // cover polygon with initial cells
     for (var x = minX; x < maxX; x += cellSize) {
         for (var y = minY; y < maxY; y += cellSize) {
-            cells.push(new Cell(x + h, y + h));
+            cellQueue.push(new Cell(x + h, y + h, h, polygon));
         }
     }
 
     // take centroid as the first best guess
-    var bestCell = getCentroidCell(polygon[0]);
-    bestCell.d = pointToPolygonDist(bestCell.x, bestCell.y, polygon);
+    var bestCell = getCentroidCell(polygon);
 
-    var error = h * Math.sqrt(2);
-    var numProbes = 0;
+    var numProbes = cellQueue.length;
 
-    while (true) {
-        numProbes += cells.length;
+    while (cellQueue.length) {
+        var cell = cellQueue.pop();
 
-        // calculate cell distances, keeping track of global max distance
-        for (i = 0; i < cells.length; i++) {
-            var cell = cells[i];
-            cell.d = pointToPolygonDist(cell.x, cell.y, polygon);
-
-            if (cell.d > bestCell.d) {
-                bestCell = cell;
-            }
+        if (cell.d > bestCell.d) {
+            bestCell = cell;
+            if (debug) console.log('found best ' + (Math.round(1e4 * cell.d) / 1e4) +
+                ' after ' + numProbes + ' probes');
         }
 
-        if (debug) console.log('cells processed: %d, best so far %s, error %s',
-            cells.length, bestCell.d.toFixed(2), error.toFixed(2));
+        if (cell.max - bestCell.d <= precision) continue;
 
-        if (error <= precision) break;
+        // console.log('splitting ' + cell.d + ', max ' + cell.max);
 
-        h /= 2;
-
-        var childCells = [];
-        for (i = 0; i < cells.length; i++) {
-            cell = cells[i];
-            if (cell.d + error <= bestCell.d) continue;
-
-            // if a cell potentially contains a better solution than the current best, subdivide
-            childCells.push(new Cell(cell.x - h, cell.y - h));
-            childCells.push(new Cell(cell.x + h, cell.y - h));
-            childCells.push(new Cell(cell.x - h, cell.y + h));
-            childCells.push(new Cell(cell.x + h, cell.y + h));
-        }
-
-        cells = childCells;
-        error /= 2;
+        // if a cell potentially contains a better solution than the current best, subdivide
+        x = cell.x;
+        y = cell.y;
+        h = cell.h / 2;
+        cellQueue.push(new Cell(x - h, y - h, h, polygon));
+        cellQueue.push(new Cell(x + h, y - h, h, polygon));
+        cellQueue.push(new Cell(x - h, y + h, h, polygon));
+        cellQueue.push(new Cell(x + h, y + h, h, polygon));
+        numProbes += 4;
     }
 
     if (debug) {
@@ -83,10 +72,16 @@ function polylabel(polygon, precision, debug) {
     return [bestCell.x, bestCell.y];
 }
 
-function Cell(x, y) {
-    this.x = x;
-    this.y = y;
-    this.d = null;
+function compareMax(a, b) {
+    return b.max - a.max;
+}
+
+function Cell(x, y, h, polygon) {
+    this.x = x; // center x
+    this.y = y; // center y
+    this.h = h; // half the cell size
+    this.d = pointToPolygonDist(x, y, polygon); // distance to polygon
+    this.max = this.d + this.h * Math.SQRT2; // max distance to polygon within a cell
 }
 
 // signed distance from point to polygon outline (negative if point is outside)
@@ -112,10 +107,11 @@ function pointToPolygonDist(x, y, polygon) {
 }
 
 // get polygon centroid
-function getCentroidCell(points) {
+function getCentroidCell(polygon) {
     var area = 0;
     var x = 0;
     var y = 0;
+    var points = polygon[0];
 
     for (var i = 0, len = points.length, j = len - 1; i < len; j = i++) {
         var a = points[i];
@@ -125,7 +121,7 @@ function getCentroidCell(points) {
         y += (a[1] + b[1]) * f;
         area += f * 3;
     }
-    return new Cell(x / area, y / area);
+    return new Cell(x / area, y / area, 0, polygon);
 }
 
 // get squared distance from a point to a segment

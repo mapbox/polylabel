@@ -17,5 +17,8 @@
   },
   "eslintConfig": {
     "extends": "mourner"
+  },
+  "dependencies": {
+    "tinyqueue": "^1.1.0"
   }
 }
