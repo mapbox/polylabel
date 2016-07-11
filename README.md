@@ -24,3 +24,16 @@ var p = polylabel(polygon, 1.0);
 ```
 
 <img src="https://cloud.githubusercontent.com/assets/25395/16695332/e0b71a24-4547-11e6-868f-6c85744bc083.png">
+
+### How the algorithm works
+
+This is an iterative grid-based algorithm, which starts by covering the polygon with big square cells and then iteratively splitting them in the order of the most promising ones, while aggressively pruning uninteresting cells.
+
+1. Generate initial square cells that fully cover the polygon (with cell size equal to either width or height, whichever is lower). Calculate distance from the center of each cell to the outer polygon, using negative value if the point is outside the polygon (detected by ray-casting).
+2. Put the cells into a priority queue sorted by the maximum potential distance from a point inside a cell, defined as a sum of the distance from the center and the cell radius (equal to `cell_size * sqrt(2) / 2`).
+3. Calculate the distance from the centroid of the polygon and pick it as the first "best so far".
+4. Pull out cells from the priority queue one by one. If a cell's distance is better than the current best, save it as such.
+Then, if the cell potentially contains a better solution that the current best (`cell_max - best_dist > precision`),
+split it into 4 children cells and put them in the queue.
+5. Stop the algorithm when we have exhausted the queue and return the best cell's center as the pole of inaccessibility.
+It will be guaranteed to be a global optimum within the given precision.
