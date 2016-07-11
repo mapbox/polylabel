@@ -1,4 +1,4 @@
-## polylabel
+## polylabel [![Build Status](https://travis-ci.org/mapbox/polylabel.svg?branch=master)](https://travis-ci.org/mapbox/polylabel)
 
 A fast algorithm for finding polygon _pole of inaccessibility_,
 the most distant internal point from the polygon outline (not to be confused with centroid),
