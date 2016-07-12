@@ -22,6 +22,7 @@ function polylabel(polygon, precision, debug) {
     var cellSize = Math.min(width, height);
     var h = cellSize / 2;
 
+    // a priority queue of cells in order of their "potential" (max distance to polygon)
     var cellQueue = new Queue(null, compareMax);
 
     // cover polygon with initial cells
@@ -36,25 +37,24 @@ function polylabel(polygon, precision, debug) {
     var numProbes = cellQueue.length;
 
     while (cellQueue.length) {
+        // pick the most promising cell from the queue
         var cell = cellQueue.pop();
 
+        // update the best cell if we found a better one
         if (cell.d > bestCell.d) {
             bestCell = cell;
             if (debug) console.log('found best %d after %d probes', Math.round(1e4 * cell.d) / 1e4, numProbes);
         }
 
-        // do not drill down further if there's no chance o a better solution
+        // do not drill down further if there's no chance of a better solution
         if (cell.max - bestCell.d <= precision) continue;
 
-        x = cell.x;
-        y = cell.y;
-        h = cell.h / 2;
-
         // split the cell into four cells
-        cellQueue.push(new Cell(x - h, y - h, h, polygon));
-        cellQueue.push(new Cell(x + h, y - h, h, polygon));
-        cellQueue.push(new Cell(x - h, y + h, h, polygon));
-        cellQueue.push(new Cell(x + h, y + h, h, polygon));
+        h = cell.h / 2;
+        cellQueue.push(new Cell(cell.x - h, cell.y - h, h, polygon));
+        cellQueue.push(new Cell(cell.x + h, cell.y - h, h, polygon));
+        cellQueue.push(new Cell(cell.x - h, cell.y + h, h, polygon));
+        cellQueue.push(new Cell(cell.x + h, cell.y + h, h, polygon));
         numProbes += 4;
     }
 
