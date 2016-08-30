@@ -34,6 +34,11 @@ function polylabel(polygon, precision, debug) {
 
     // take centroid as the first best guess
     var bestCell = getCentroidCell(polygon);
+
+    // special case for rectangular polygons
+    var bboxCell = new Cell(minX + width / 2, minY + height / 2, 0, polygon);
+    if (bboxCell.d > bestCell.d) bestCell = bboxCell;
+
     var numProbes = cellQueue.length;
 
     while (cellQueue.length) {
