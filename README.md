@@ -39,3 +39,14 @@ split it into 4 children cells and put them in the queue.
 It will be guaranteed to be a global optimum within the given precision.
 
 ![image](https://cloud.githubusercontent.com/assets/25395/16748630/e6b3336c-47cd-11e6-8059-0eeccf22cf6b.png)
+
+
+### TypeScript
+
+TypeScript implementation was added to the [DefinitelyTyped repository](https://github.com/DefinitelyTyped/DefinitelyTyped/blob/88fca07022ae6549a09965bf1316a1f5e34e471b/js-base64/js-base64.d.ts).
+
+**Install definition**
+
+```bash
+$ typings install --save --global dt~polylabel
+```
