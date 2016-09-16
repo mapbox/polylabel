@@ -3,6 +3,7 @@
 var Queue = require('tinyqueue');
 
 module.exports = polylabel;
+module.exports.default = polylabel;
 
 function polylabel(polygon, precision, debug) {
     precision = precision || 1.0;
