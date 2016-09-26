@@ -42,10 +42,5 @@ It will be guaranteed to be a global optimum within the given precision.
 
 ### TypeScript
 
-TypeScript implementation was added to the [DefinitelyTyped repository](https://github.com/DefinitelyTyped/DefinitelyTyped).
-
-**Install definition**
-
-```bash
-$ typings install --save --global dt~polylabel
-```
+[TypeScript type definitions](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/concaveman)
+are available via `npm install --save @types/polylabel`.
