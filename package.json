@@ -19,6 +19,7 @@
     "extends": "mourner"
   },
   "dependencies": {
+    "rbush": "^2.0.1",
     "tinyqueue": "^1.1.0"
   }
 }
