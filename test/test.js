@@ -23,3 +23,13 @@ test('finds pole of inaccessibility for water2 and default precision 1', functio
     t.same(p, [3263.5, 3263.5]);
     t.end();
 });
+
+test('works on degenerate polygons', function (t) {
+    var p = polylabel([[[0, 0], [1, 0], [2, 0], [0, 0]]]);
+    t.same(p, [0, 0]);
+
+    p = polylabel([[[0, 0], [1, 0], [1, 1], [1, 0], [0, 0]]]);
+    t.same(p, [0, 0]);
+
+    t.end();
+});

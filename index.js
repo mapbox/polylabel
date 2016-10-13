@@ -26,6 +26,8 @@ function polylabel(polygon, precision, debug) {
     // a priority queue of cells in order of their "potential" (max distance to polygon)
     var cellQueue = new Queue(null, compareMax);
 
+    if (cellSize === 0) return [minX, minY];
+
     // cover polygon with initial cells
     for (var x = minX; x < maxX; x += cellSize) {
         for (var y = minY; y < maxY; y += cellSize) {
@@ -121,6 +123,7 @@ function getCentroidCell(polygon) {
         y += (a[1] + b[1]) * f;
         area += f * 3;
     }
+    if (area === 0) return new Cell(points[0][0], points[0][1], 0, polygon);
     return new Cell(x / area, y / area, 0, polygon);
 }
 
