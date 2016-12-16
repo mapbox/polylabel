@@ -2,7 +2,7 @@
   "name": "polylabel",
   "version": "1.0.2",
   "description": "A JS library for finding optimal label position inside a polygon",
-  "main": "index.js",
+  "main": "polylabel.js",
   "scripts": {
     "pretest": "eslint *.js test/*.js",
     "test": "tape test/test.js"
