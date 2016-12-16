@@ -12,17 +12,6 @@ Unlike the one in the paper, this algorithm:
 - guarantees finding **global optimum** within the given precision
 - is many times faster (10-40x)
 
-### Usage
-
-Given polygon coordinates in
-[GeoJSON-like format](http://geojson.org/geojson-spec.html#polygon)
-and precision (`1.0` by default),
-Polylabel returns the pole of inaccessibility coordinate in `[x, y]` format.
-
-```js
-var p = polylabel(polygon, 1.0);
-```
-
 ![](https://cloud.githubusercontent.com/assets/25395/16745865/864a0a30-47c0-11e6-87bc-58acac41a520.png)
 
 ### How the algorithm works
@@ -40,7 +29,32 @@ It will be guaranteed to be a global optimum within the given precision.
 
 ![image](https://cloud.githubusercontent.com/assets/25395/16748630/e6b3336c-47cd-11e6-8059-0eeccf22cf6b.png)
 
+### JavaScript Usage
+
+Given polygon coordinates in
+[GeoJSON-like format](http://geojson.org/geojson-spec.html#polygon)
+and precision (`1.0` by default),
+Polylabel returns the pole of inaccessibility coordinate in `[x, y]` format.
+
+```js
+var p = polylabel(polygon, 1.0);
+```
+
 ### TypeScript
 
 [TypeScript type definitions](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/concaveman)
 are available via `npm install --save @types/polylabel`.
+
+### C++ Usage
+
+It is recommended to install polylabel via [mason](https://github.com/mapbox/mason). You will also need to install its dependencies: [geometry.hpp](https://github.com/mapbox/geometry.hpp) and [variant](https://github.com/mapbox/variant).
+
+```C++
+#include <mapbox/polylabel.hpp>
+
+int main() {
+    mapbox::geometry::polygon<double> polygon = readPolygon(); // Get polygon data from somewhere.
+    mapbox::geometry::point<double> p = mapbox::polylabel(polygon, 1.0);
+    return 0;
+}
+```
