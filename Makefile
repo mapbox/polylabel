@@ -1,4 +1,4 @@
-CXXFLAGS += -I. -std=c++14 -Wall -Wextra -Wshadow -Werror -g -fPIC
+CXXFLAGS += -Iinclude -std=c++14 -Wall -Wextra -Wshadow -Werror -g -fPIC
 
 MASON ?= .mason/mason
 VARIANT = variant 1.1.4
@@ -17,7 +17,7 @@ mason_packages/headers/geometry:
 build:
 	mkdir -p build
 
-build/test: test/test.cpp polylabel.hpp build mason_packages/headers/geometry
+build/test: test/test.cpp include/mapbox/polylabel.hpp build mason_packages/headers/geometry
 	$(CXX) $(CFLAGS) $(CXXFLAGS) $(DEPS) $< -o $@
 
 test: build/test
