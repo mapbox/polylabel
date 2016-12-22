@@ -1,5 +1,5 @@
 {
-  "name": "polylabel",
+  "name": "@mapbox/polylabel",
   "version": "1.0.2",
   "description": "A JS library for finding optimal label position inside a polygon",
   "main": "polylabel.js",
