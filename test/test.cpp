@@ -1,4 +1,4 @@
-#include <polylabel.hpp>
+#include <mapbox/polylabel.hpp>
 
 #include <rapidjson/document.h>
 #include <rapidjson/writer.h>
