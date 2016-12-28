@@ -58,3 +58,7 @@ int main() {
     return 0;
 }
 ```
+
+### Command Line Usage
+
+An external utility can be found at https://github.com/andrewharvey/geojson-polygon-labels
