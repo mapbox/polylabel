@@ -5,6 +5,15 @@ cache: apt
 matrix:
   include:
     - language: generic
+      env: CXX=g++-4.9
+      addons:
+        apt:
+          sources: [ 'ubuntu-toolchain-r-test' ]
+          packages: [ 'g++-4.9' ]
+      script:
+        - make test
+
+    - language: generic
       env: CXX=g++-5
       addons:
         apt:
