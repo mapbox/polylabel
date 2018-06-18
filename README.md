@@ -59,10 +59,7 @@ int main() {
 }
 ```
 
-### Command Line Usage
+#### Ports to other languages
 
-An external utility can be found at https://github.com/andrewharvey/geojson-polygon-labels
-
-### Python alternative
-
-Unofficial implementation for Python at https://github.com/Twista/python-polylabel
+- [andrewharvey/geojson-polygon-labels](https://github.com/andrewharvey/geojson-polygon-labels) (CLI) 
+- [Twista/python-polylabel](https://github.com/Twista/python-polylabel) (Python)
