@@ -63,3 +63,4 @@ int main() {
 
 - [andrewharvey/geojson-polygon-labels](https://github.com/andrewharvey/geojson-polygon-labels) (CLI) 
 - [Twista/python-polylabel](https://github.com/Twista/python-polylabel) (Python)
+- [Shapely](https://github.com/Toblerity/Shapely/blob/master/shapely/algorithms/polylabel.py) (Python)
