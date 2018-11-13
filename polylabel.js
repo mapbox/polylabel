@@ -42,10 +42,10 @@ function polylabel(polygon, precision, debug) {
     var cellSize = Math.min(width, height);
     var h = cellSize / 2;
 
+    if (cellSize === 0) return [minX, minY];
+
     // a priority queue of cells in order of their "potential" (max distance to polygon)
     var cellQueue = new Queue(null, compareMax);
-
-    if (cellSize === 0) return [minX, minY];
 
     var centroid = getCentroid(polygon);
     var fitnessFunc = getFitnessFunc(centroid, [width, height]);
