@@ -11,14 +11,14 @@
   "author": "Vladimir Agafonkin",
   "license": "ISC",
   "devDependencies": {
-    "eslint": "^3.0.1",
+    "eslint": "^4.19.1",
     "eslint-config-mourner": "^2.0.1",
-    "tape": "^4.6.0"
+    "tape": "^4.11.0"
   },
   "eslintConfig": {
     "extends": "mourner"
   },
   "dependencies": {
-    "tinyqueue": "^1.1.0"
+    "tinyqueue": "^2.0.3"
   }
 }

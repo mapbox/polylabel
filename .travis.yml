@@ -32,13 +32,13 @@ matrix:
         - make test
 
     - language: node
-      node_js: 4
+      node_js: 10
       script:
         - npm install
         - npm test
 
     - language: node
-      node_js: stable
+      node_js: node
       script:
         - npm install
         - npm test
