@@ -65,3 +65,4 @@ int main() {
 - [Twista/python-polylabel](https://github.com/Twista/python-polylabel) (Python)
 - [Shapely](https://github.com/Toblerity/Shapely/blob/master/shapely/algorithms/polylabel.py) (Python)
 - [polylabelr](https://CRAN.R-project.org/package=polylabelr) (R)
+- [polylabel-rs](https://github.com/urschrei/polylabel-rs) (Rust)
