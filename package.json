@@ -1,5 +1,5 @@
 {
-  "name": "@mapbox/polylabel",
+  "name": "polylabel",
   "version": "1.0.2",
   "description": "A JS library for finding optimal label position inside a polygon",
   "main": "polylabel.js",
@@ -11,9 +11,9 @@
   "author": "Vladimir Agafonkin",
   "license": "ISC",
   "devDependencies": {
-    "eslint": "^4.19.1",
+    "eslint": "^7.0.0",
     "eslint-config-mourner": "^2.0.1",
-    "tape": "^4.11.0"
+    "tape": "^5.0.0"
   },
   "eslintConfig": {
     "extends": "mourner"
