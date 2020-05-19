@@ -10,6 +10,10 @@
   "keywords": [],
   "author": "Vladimir Agafonkin",
   "license": "ISC",
+  "files": [
+    "include",
+    "polylabel.js"
+  ],
   "devDependencies": {
     "eslint": "^7.0.0",
     "eslint-config-mourner": "^2.0.1",
