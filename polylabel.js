@@ -25,7 +25,11 @@ function polylabel(polygon, precision, debug) {
     var cellSize = Math.min(width, height);
     var h = cellSize / 2;
 
-    if (cellSize === 0) return [minX, minY];
+    if (cellSize === 0) {
+        var degeneratePoleOfInaccessibility = [minX, minY];
+        degeneratePoleOfInaccessibility.distance = 0;
+        return degeneratePoleOfInaccessibility;
+    }
 
     // a priority queue of cells in order of their "potential" (max distance to polygon)
     var cellQueue = new Queue(undefined, compareMax);
@@ -73,7 +77,9 @@ function polylabel(polygon, precision, debug) {
         console.log('best distance: ' + bestCell.d);
     }
 
-    return [bestCell.x, bestCell.y];
+    var poleOfInaccessibility = [bestCell.x, bestCell.y];
+    poleOfInaccessibility.distance = bestCell.d || 0;
+    return poleOfInaccessibility;
 }
 
 function compareMax(a, b) {
