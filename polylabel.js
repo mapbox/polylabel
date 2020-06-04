@@ -78,7 +78,7 @@ function polylabel(polygon, precision, debug) {
     }
 
     var poleOfInaccessibility = [bestCell.x, bestCell.y];
-    poleOfInaccessibility.distance = bestCell.d || 0;
+    poleOfInaccessibility.distance = bestCell.d;
     return poleOfInaccessibility;
 }
 
@@ -113,7 +113,7 @@ function pointToPolygonDist(x, y, polygon) {
         }
     }
 
-    return (inside ? 1 : -1) * Math.sqrt(minDistSq);
+    return minDistSq === 0 ? 0 : (inside ? 1 : -1) * Math.sqrt(minDistSq);
 }
 
 // get polygon centroid
