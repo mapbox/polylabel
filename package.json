@@ -1,6 +1,6 @@
 {
   "name": "polylabel",
-  "version": "1.0.5",
+  "version": "1.1.0",
   "description": "A JS library for finding optimal label position inside a polygon",
   "main": "polylabel.js",
   "scripts": {
