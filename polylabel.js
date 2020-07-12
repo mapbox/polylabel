@@ -57,7 +57,7 @@ function polylabel(polygon, precision, debug) {
         // update the best cell if we found a better one
         if (cell.d > bestCell.d) {
             bestCell = cell;
-            if (debug) console.log('found best %d after %d probes', Math.round(1e4 * cell.d) / 1e4, numProbes);
+            if (debug) console.log('found best %f after %d probes', Math.round(1e4 * cell.d) / 1e4, numProbes);
         }
 
         // do not drill down further if there's no chance of a better solution
