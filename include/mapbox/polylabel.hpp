@@ -137,7 +137,7 @@ geometry::point<T> polylabel(const geometry::polygon<T>& polygon, T precision = 
     // take centroid as the first best guess
     auto bestCell = getCentroidCell(polygon);
 
-    // special case for rectangular polygons
+    // second guess: bounding box centroid
     Cell<T> bboxCell(envelope.min + size / 2.0, 0, polygon);
     if (bboxCell.d > bestCell.d) {
         bestCell = bboxCell;
