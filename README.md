@@ -68,3 +68,4 @@ int main() {
 - [polylabel-rs](https://github.com/urschrei/polylabel-rs) (Rust)
 - [polylabel-java](https://github.com/FreshLlamanade/polylabel-java) (Java)
 - [php-polylabel](https://github.com/dliebner/php-polylabel) (PHP)
+- [dart_polylabel](https://github.com/beroso/dart_polylabel) (Dart)
