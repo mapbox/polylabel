@@ -1,6 +1,6 @@
 cff-version: 1.2.0
-title: Polylabel: a fast algorithm for finding the pole of inaccessibility of a polygon
-message: Please cite this software using these metadata.
+title: "Polylabel: a fast algorithm for finding the pole of inaccessibility of a polygon"
+message: "Please cite this software using these metadata."
 type: software
 url: https://github.com/mapbox/polylabel
 date-released: 2016-07-11
