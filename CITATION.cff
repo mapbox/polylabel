@@ -1,0 +1,14 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: >-
+  Polylabel: a fast algorithm for finding the pole of
+  inaccessibility of a polygon
+message: Please cite this software using these metadata.
+type: software
+authors:
+  - given-names: Volodymyr
+    family-names: Agafonkin
+    email: agafonkin@gmail.com
+    affiliation: Mapbox
