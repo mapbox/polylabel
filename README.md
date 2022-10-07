@@ -42,7 +42,7 @@ var p = polylabel(polygon, 1.0);
 
 ### TypeScript
 
-[TypeScript type definitions](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/concaveman)
+[TypeScript type definitions](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/polylabel)
 are available via `npm install --save @types/polylabel`.
 
 ### C++ Usage
