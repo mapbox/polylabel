@@ -31,13 +31,13 @@ It will be guaranteed to be a global optimum within the given precision.
 
 ### JavaScript Usage
 
-Given polygon coordinates in
+Given an array of polygon coordinates in
 [GeoJSON-like format](http://geojson.org/geojson-spec.html#polygon)
 and precision (`1.0` by default),
 Polylabel returns the pole of inaccessibility coordinate in `[x, y]` format.
 
 ```js
-var p = polylabel(polygon, 1.0);
+var p = polylabel([[[0, 0], ...]]], 1.0);
 ```
 
 ### TypeScript
