@@ -1,0 +1,7 @@
+{
+  "extends": "mourner",
+  "parserOptions": {
+    "ecmaVersion": 2021,
+    "sourceType": "module"
+  }
+}

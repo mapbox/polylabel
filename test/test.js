@@ -1,10 +1,11 @@
-'use strict';
+import {createRequire} from 'node:module';
+const require = createRequire(import.meta.url);
 
-var polylabel = require('../');
-var test = require('tape').test;
+import polylabel from '../polylabel.js';
+import {test} from 'tape';
 
-var water1 = require('./fixtures/water1.json');
-var water2 = require('./fixtures/water2.json');
+const water1 = require('./fixtures/water1.json');
+const water2 = require('./fixtures/water2.json');
 
 test('finds pole of inaccessibility for water1 and precision 1', function (t) {
     var p = polylabel(water1, 1);
