@@ -9,13 +9,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/mapbox/polylabel.git"
+    "url": "https://github.com/razor-1/polylabel.git"
   },
   "keywords": [],
   "author": "Vladimir Agafonkin",
   "license": "ISC",
+  "types": "polylabel.d.ts",
   "files": [
-    "include",
+    "polylabel.d.ts",
     "polylabel.js"
   ],
   "devDependencies": {
