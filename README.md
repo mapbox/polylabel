@@ -70,3 +70,4 @@ int main() {
 - [php-polylabel](https://github.com/dliebner/php-polylabel) (PHP)
 - [dart_polylabel](https://github.com/beroso/dart_polylabel) (Dart)
 - [ruby-polylabel](https://github.com/fredplante/ruby-polylabel) (Ruby)
+- [Polylabel.jl](https://github.com/asinghvi17/Polylabel.jl) (Julia)
