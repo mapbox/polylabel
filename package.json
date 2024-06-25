@@ -3,9 +3,10 @@
   "version": "1.1.0",
   "description": "A JS library for finding optimal label position inside a polygon",
   "main": "polylabel.js",
+  "type": "module",
   "scripts": {
     "pretest": "eslint *.js test/*.js",
-    "test": "tape test/test.js"
+    "test": "node test/test.js"
   },
   "repository": {
     "type": "git",
@@ -19,9 +20,8 @@
     "polylabel.js"
   ],
   "devDependencies": {
-    "eslint": "^7.0.0",
-    "eslint-config-mourner": "^2.0.1",
-    "tape": "^5.0.0"
+    "eslint": "^9.5.0",
+    "eslint-config-mourner": "^4.0.0"
   },
   "eslintConfig": {
     "extends": "mourner"

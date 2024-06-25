@@ -1,58 +1,53 @@
-'use strict';
 
-var Queue = require('tinyqueue');
+import Queue from 'tinyqueue';
 
-if (Queue.default) Queue = Queue.default; // temporary webpack fix
-
-module.exports = polylabel;
-module.exports.default = polylabel;
-
-function polylabel(polygon, precision, debug) {
-    precision = precision || 1.0;
-
+export default function polylabel(polygon, precision = 1.0, debug = false) {
     // find the bounding box of the outer ring
-    var minX, minY, maxX, maxY;
-    for (var i = 0; i < polygon[0].length; i++) {
-        var p = polygon[0][i];
-        if (!i || p[0] < minX) minX = p[0];
-        if (!i || p[1] < minY) minY = p[1];
-        if (!i || p[0] > maxX) maxX = p[0];
-        if (!i || p[1] > maxY) maxY = p[1];
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    for (const [x, y] of polygon[0]) {
+        if (x < minX) minX = x;
+        if (y < minY) minY = y;
+        if (x > maxX) maxX = x;
+        if (y > maxY) maxY = y;
     }
 
-    var width = maxX - minX;
-    var height = maxY - minY;
-    var cellSize = Math.min(width, height);
-    var h = cellSize / 2;
+    const width = maxX - minX;
+    const height = maxY - minY;
+    const cellSize = Math.min(width, height);
+    let h = cellSize / 2;
 
     if (cellSize === 0) {
-        var degeneratePoleOfInaccessibility = [minX, minY];
+        const degeneratePoleOfInaccessibility = [minX, minY];
         degeneratePoleOfInaccessibility.distance = 0;
         return degeneratePoleOfInaccessibility;
     }
 
     // a priority queue of cells in order of their "potential" (max distance to polygon)
-    var cellQueue = new Queue(undefined, compareMax);
+    const cellQueue = new Queue(undefined, compareMax);
 
     // cover polygon with initial cells
-    for (var x = minX; x < maxX; x += cellSize) {
-        for (var y = minY; y < maxY; y += cellSize) {
+    for (let x = minX; x < maxX; x += cellSize) {
+        for (let y = minY; y < maxY; y += cellSize) {
             cellQueue.push(new Cell(x + h, y + h, h, polygon));
         }
     }
 
     // take centroid as the first best guess
-    var bestCell = getCentroidCell(polygon);
+    let bestCell = getCentroidCell(polygon);
 
     // second guess: bounding box centroid
-    var bboxCell = new Cell(minX + width / 2, minY + height / 2, 0, polygon);
+    const bboxCell = new Cell(minX + width / 2, minY + height / 2, 0, polygon);
     if (bboxCell.d > bestCell.d) bestCell = bboxCell;
 
-    var numProbes = cellQueue.length;
+    let numProbes = cellQueue.length;
 
     while (cellQueue.length) {
         // pick the most promising cell from the queue
-        var cell = cellQueue.pop();
+        const cell = cellQueue.pop();
 
         // update the best cell if we found a better one
         if (cell.d > bestCell.d) {
@@ -73,11 +68,11 @@ function polylabel(polygon, precision, debug) {
     }
 
     if (debug) {
-        console.log('num probes: ' + numProbes);
-        console.log('best distance: ' + bestCell.d);
+        console.log(`num probes: ${numProbes}`);
+        console.log(`best distance: ${bestCell.d}`);
     }
 
-    var poleOfInaccessibility = [bestCell.x, bestCell.y];
+    const poleOfInaccessibility = [bestCell.x, bestCell.y];
     poleOfInaccessibility.distance = bestCell.d;
     return poleOfInaccessibility;
 }
@@ -96,15 +91,13 @@ function Cell(x, y, h, polygon) {
 
 // signed distance from point to polygon outline (negative if point is outside)
 function pointToPolygonDist(x, y, polygon) {
-    var inside = false;
-    var minDistSq = Infinity;
+    let inside = false;
+    let minDistSq = Infinity;
 
-    for (var k = 0; k < polygon.length; k++) {
-        var ring = polygon[k];
-
-        for (var i = 0, len = ring.length, j = len - 1; i < len; j = i++) {
-            var a = ring[i];
-            var b = ring[j];
+    for (const ring of polygon) {
+        for (let i = 0, len = ring.length, j = len - 1; i < len; j = i++) {
+            const a = ring[i];
+            const b = ring[j];
 
             if ((a[1] > y !== b[1] > y) &&
                 (x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0])) inside = !inside;
@@ -118,15 +111,15 @@ function pointToPolygonDist(x, y, polygon) {
 
 // get polygon centroid
 function getCentroidCell(polygon) {
-    var area = 0;
-    var x = 0;
-    var y = 0;
-    var points = polygon[0];
+    let area = 0;
+    let x = 0;
+    let y = 0;
+    const points = polygon[0];
 
-    for (var i = 0, len = points.length, j = len - 1; i < len; j = i++) {
-        var a = points[i];
-        var b = points[j];
-        var f = a[0] * b[1] - b[0] * a[1];
+    for (let i = 0, len = points.length, j = len - 1; i < len; j = i++) {
+        const a = points[i];
+        const b = points[j];
+        const f = a[0] * b[1] - b[0] * a[1];
         x += (a[0] + b[0]) * f;
         y += (a[1] + b[1]) * f;
         area += f * 3;
@@ -137,15 +130,14 @@ function getCentroidCell(polygon) {
 
 // get squared distance from a point to a segment
 function getSegDistSq(px, py, a, b) {
-
-    var x = a[0];
-    var y = a[1];
-    var dx = b[0] - x;
-    var dy = b[1] - y;
+    let x = a[0];
+    let y = a[1];
+    let dx = b[0] - x;
+    let dy = b[1] - y;
 
     if (dx !== 0 || dy !== 0) {
 
-        var t = ((px - x) * dx + (py - y) * dy) / (dx * dx + dy * dy);
+        const t = ((px - x) * dx + (py - y) * dy) / (dx * dx + dy * dy);
 
         if (t > 1) {
             x = b[0];
