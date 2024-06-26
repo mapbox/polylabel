@@ -34,10 +34,11 @@ It will be guaranteed to be a global optimum within the given precision.
 Given polygon coordinates in
 [GeoJSON-like format](http://geojson.org/geojson-spec.html#polygon)
 and precision (`1.0` by default),
-Polylabel returns the pole of inaccessibility coordinate in `[x, y]` format.
+Polylabel returns the pole of inaccessibility coordinate in `[x, y]` format. The distance (in source units, usually degrees) is included as a `distance` property.
 
 ```js
-var p = polylabel(polygon, 1.0);
+const p = polylabel(polygon, 1.0);
+const distance = p.distance;
 ```
 
 ### TypeScript
