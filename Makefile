@@ -1,15 +1,18 @@
-CXXFLAGS += -Iinclude -std=c++14 -Wall -Wextra -Wshadow -Werror -g -fPIC
+CXXFLAGS += -Iinclude -std=c++14 -Wall -Wextra -Wshadow -Werror -Wno-class-memaccess -g -fPIC
 
 MASON ?= .mason/mason
 VARIANT = variant 1.1.4
 GEOMETRY = geometry 0.9.2
 RAPIDJSON = rapidjson 1.1.0
 
-DEPS = `$(MASON) cflags $(VARIANT)` \
-       `$(MASON) cflags $(GEOMETRY)` \
-       `$(MASON) cflags $(RAPIDJSON)`
+$(MASON):
+	git submodule update --init
 
-mason_packages/headers/geometry:
+DEPS = `$(MASON) cflags $(VARIANT)` \
+	`$(MASON) cflags $(GEOMETRY)` \
+	`$(MASON) cflags $(RAPIDJSON)`
+
+mason_packages/headers/geometry: $(MASON)
 	$(MASON) install $(VARIANT)
 	$(MASON) install $(GEOMETRY)
 	$(MASON) install $(RAPIDJSON)
