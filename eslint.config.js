@@ -1,3 +1,1 @@
-import config from 'eslint-config-mourner';
-
-export default config;
+export {default} from 'eslint-config-mourner';

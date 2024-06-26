@@ -2,31 +2,32 @@
   "name": "polylabel",
   "version": "1.1.0",
   "description": "A JS library for finding optimal label position inside a polygon",
+  "keywords": [
+    "polygon",
+    "geometry",
+    "algorithm"
+  ],
   "main": "polylabel.js",
   "type": "module",
-  "scripts": {
-    "pretest": "eslint *.js test/*.js",
-    "test": "node test/test.js"
+  "dependencies": {
+    "tinyqueue": "^2.0.3"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/mapbox/polylabel.git"
-  },
-  "keywords": [],
-  "author": "Vladimir Agafonkin",
-  "license": "ISC",
-  "files": [
-    "include",
-    "polylabel.js"
-  ],
   "devDependencies": {
     "eslint": "^9.5.0",
     "eslint-config-mourner": "^4.0.0"
   },
-  "eslintConfig": {
-    "extends": "mourner"
+  "scripts": {
+    "pretest": "eslint *.js test/*.js",
+    "test": "node test/test.js"
   },
-  "dependencies": {
-    "tinyqueue": "^2.0.3"
-  }
+  "files": [
+    "include",
+    "polylabel.js"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mapbox/polylabel.git"
+  },
+  "author": "Vladimir Agafonkin",
+  "license": "ISC"
 }
