@@ -32,14 +32,16 @@ It will be guaranteed to be a global optimum within the given precision.
 ### JavaScript Usage
 
 Given polygon coordinates in
-[GeoJSON-like format](http://geojson.org/geojson-spec.html#polygon)
+[GeoJSON-like format](http://geojson.org/geojson-spec.html#polygon) (an array of arrays of `[x, y]` points)
 and precision (`1.0` by default),
-Polylabel returns the pole of inaccessibility coordinate in `[x, y]` format. The distance (in source units, usually degrees) is included as a `distance` property.
+Polylabel returns the pole of inaccessibility coordinate in `[x, y]` format. The distance to the closest polygon point (in input units) is included as a `distance` property.
 
 ```js
-const p = polylabel(polygon, 1.0);
+const p = polylabel([[[0, 0], [1, 0], ...]], 1.0);
 const distance = p.distance;
 ```
+
+Be careful to pick precision appropriate for the input units. E.g. in case of geographic coordinates (longitude and latitude), `0.000001` is appropriate, while the default (`1.0`) would be too imprecise.
 
 ### TypeScript
 
