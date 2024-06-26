@@ -29,13 +29,6 @@ export default function polylabel(polygon, precision = 1.0, debug = false) {
     // a priority queue of cells in order of their "potential" (max distance to polygon)
     const cellQueue = new Queue(undefined, compareMax);
 
-    // cover polygon with initial cells
-    for (let x = minX; x < maxX; x += cellSize) {
-        for (let y = minY; y < maxY; y += cellSize) {
-            cellQueue.push(new Cell(x + h, y + h, h, polygon));
-        }
-    }
-
     // take centroid as the first best guess
     let bestCell = getCentroidCell(polygon);
 
@@ -43,28 +36,41 @@ export default function polylabel(polygon, precision = 1.0, debug = false) {
     const bboxCell = new Cell(minX + width / 2, minY + height / 2, 0, polygon);
     if (bboxCell.d > bestCell.d) bestCell = bboxCell;
 
-    let numProbes = cellQueue.length;
+    let numProbes = 2;
+
+    function potentiallyQueue(x, y, h) {
+        const cell = new Cell(x, y, h, polygon);
+        numProbes++;
+        if (cell.max > bestCell.d + precision) cellQueue.push(cell);
+
+        // update the best cell if we found a better one
+        if (cell.d > bestCell.d) {
+            bestCell = cell;
+            if (debug) console.log(`found best ${Math.round(1e4 * cell.d) / 1e4} after ${numProbes} probes`);
+        }
+    }
+
+    // cover polygon with initial cells
+    let h = cellSize / 2;
+    for (let x = minX; x < maxX; x += cellSize) {
+        for (let y = minY; y < maxY; y += cellSize) {
+            potentiallyQueue(x + h, y + h, h);
+        }
+    }
 
     while (cellQueue.length) {
         // pick the most promising cell from the queue
         const cell = cellQueue.pop();
 
-        // update the best cell if we found a better one
-        if (cell.d > bestCell.d) {
-            bestCell = cell;
-            if (debug) console.log('found best %f after %d probes', Math.round(1e4 * cell.d) / 1e4, numProbes);
-        }
-
         // do not drill down further if there's no chance of a better solution
-        if (cell.max - bestCell.d <= precision) continue;
+        if (cell.max - bestCell.d <= precision) break;
 
         // split the cell into four cells
         h = cell.h / 2;
-        cellQueue.push(new Cell(cell.x - h, cell.y - h, h, polygon));
-        cellQueue.push(new Cell(cell.x + h, cell.y - h, h, polygon));
-        cellQueue.push(new Cell(cell.x - h, cell.y + h, h, polygon));
-        cellQueue.push(new Cell(cell.x + h, cell.y + h, h, polygon));
-        numProbes += 4;
+        potentiallyQueue(cell.x - h, cell.y - h, h);
+        potentiallyQueue(cell.x + h, cell.y - h, h);
+        potentiallyQueue(cell.x - h, cell.y + h, h);
+        potentiallyQueue(cell.x + h, cell.y + h, h);
     }
 
     if (debug) {
