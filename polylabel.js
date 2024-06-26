@@ -17,10 +17,9 @@ export default function polylabel(polygon, precision = 1.0, debug = false) {
 
     const width = maxX - minX;
     const height = maxY - minY;
-    const cellSize = Math.min(width, height);
-    let h = cellSize / 2;
+    const cellSize = Math.max(precision, Math.min(width, height));
 
-    if (cellSize === 0) {
+    if (cellSize === precision) {
         const degeneratePoleOfInaccessibility = [minX, minY];
         degeneratePoleOfInaccessibility.distance = 0;
         return degeneratePoleOfInaccessibility;
