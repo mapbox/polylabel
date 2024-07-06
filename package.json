@@ -9,12 +9,13 @@
   ],
   "main": "polylabel.js",
   "type": "module",
+  "sideEffects": false,
   "dependencies": {
-    "tinyqueue": "^2.0.3"
+    "tinyqueue": "^3.0.0"
   },
   "devDependencies": {
-    "eslint": "^9.5.0",
-    "eslint-config-mourner": "^4.0.0"
+    "eslint": "^9.6.0",
+    "eslint-config-mourner": "^4.0.1"
   },
   "scripts": {
     "pretest": "eslint *.js test/*.js",
