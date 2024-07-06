@@ -20,13 +20,13 @@ export default function polylabel(polygon, precision = 1.0, debug = false) {
     const cellSize = Math.max(precision, Math.min(width, height));
 
     if (cellSize === precision) {
-        const degeneratePoleOfInaccessibility = [minX, minY];
-        degeneratePoleOfInaccessibility.distance = 0;
-        return degeneratePoleOfInaccessibility;
+        const result = [minX, minY];
+        result.distance = 0;
+        return result;
     }
 
     // a priority queue of cells in order of their "potential" (max distance to polygon)
-    const cellQueue = new Queue(undefined, compareMax);
+    const cellQueue = new Queue(undefined, (a, b) => b.max - a.max);
 
     // take centroid as the first best guess
     let bestCell = getCentroidCell(polygon);
@@ -59,31 +59,26 @@ export default function polylabel(polygon, precision = 1.0, debug = false) {
 
     while (cellQueue.length) {
         // pick the most promising cell from the queue
-        const cell = cellQueue.pop();
+        const {max, x, y, h: ch} = cellQueue.pop();
 
         // do not drill down further if there's no chance of a better solution
-        if (cell.max - bestCell.d <= precision) break;
+        if (max - bestCell.d <= precision) break;
 
         // split the cell into four cells
-        h = cell.h / 2;
-        potentiallyQueue(cell.x - h, cell.y - h, h);
-        potentiallyQueue(cell.x + h, cell.y - h, h);
-        potentiallyQueue(cell.x - h, cell.y + h, h);
-        potentiallyQueue(cell.x + h, cell.y + h, h);
+        h = ch / 2;
+        potentiallyQueue(x - h, y - h, h);
+        potentiallyQueue(x + h, y - h, h);
+        potentiallyQueue(x - h, y + h, h);
+        potentiallyQueue(x + h, y + h, h);
     }
 
     if (debug) {
-        console.log(`num probes: ${numProbes}`);
-        console.log(`best distance: ${bestCell.d}`);
+        console.log(`num probes: ${numProbes}\nbest distance: ${bestCell.d}`);
     }
 
-    const poleOfInaccessibility = [bestCell.x, bestCell.y];
-    poleOfInaccessibility.distance = bestCell.d;
-    return poleOfInaccessibility;
-}
-
-function compareMax(a, b) {
-    return b.max - a.max;
+    const result = [bestCell.x, bestCell.y];
+    result.distance = bestCell.d;
+    return result;
 }
 
 function Cell(x, y, h, polygon) {
@@ -142,7 +137,6 @@ function getSegDistSq(px, py, a, b) {
     let dy = b[1] - y;
 
     if (dx !== 0 || dy !== 0) {
-
         const t = ((px - x) * dx + (py - y) * dy) / (dx * dx + dy * dy);
 
         if (t > 1) {
