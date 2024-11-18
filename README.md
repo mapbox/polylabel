@@ -69,7 +69,6 @@ int main() {
 - [Shapely](https://github.com/Toblerity/Shapely/blob/master/shapely/algorithms/polylabel.py) (Python)
 - [polylabelr](https://CRAN.R-project.org/package=polylabelr) (R)
 - [polylabel-rs](https://github.com/urschrei/polylabel-rs) (Rust)
-- [polylabel-java](https://github.com/FreshLlamanade/polylabel-java) (Java)
 - [php-polylabel](https://github.com/dliebner/php-polylabel) (PHP)
 - [dart_polylabel](https://github.com/beroso/dart_polylabel) (Dart)
 - [ruby-polylabel](https://github.com/fredplante/ruby-polylabel) (Ruby)
