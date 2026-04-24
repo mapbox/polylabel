@@ -2,13 +2,18 @@
 import Queue from 'tinyqueue';
 
 export default function polylabel(polygon, precision = 1.0, debug = false) {
+    // flatten polygon for faster distance computation
+    const flatPolygon = flattenPolygon(polygon);
+
     // find the bounding box of the outer ring
     let minX = Infinity;
     let minY = Infinity;
     let maxX = -Infinity;
     let maxY = -Infinity;
 
-    for (const [x, y] of polygon[0]) {
+    for (let i = 0; i < flatPolygon[0].length; i += 2) {
+        const x = flatPolygon[0][i];
+        const y = flatPolygon[0][i + 1];
         if (x < minX) minX = x;
         if (y < minY) minY = y;
         if (x > maxX) maxX = x;
@@ -29,16 +34,16 @@ export default function polylabel(polygon, precision = 1.0, debug = false) {
     const cellQueue = new Queue([], (a, b) => b.max - a.max);
 
     // take centroid as the first best guess
-    let bestCell = getCentroidCell(polygon);
+    let bestCell = getCentroidCell(flatPolygon);
 
     // second guess: bounding box centroid
-    const bboxCell = new Cell(minX + width / 2, minY + height / 2, 0, polygon);
+    const bboxCell = new Cell(minX + width / 2, minY + height / 2, 0, flatPolygon);
     if (bboxCell.d > bestCell.d) bestCell = bboxCell;
 
     let numProbes = 2;
 
     function potentiallyQueue(x, y, h) {
-        const cell = new Cell(x, y, h, polygon);
+        const cell = new Cell(x, y, h, flatPolygon);
         numProbes++;
         if (cell.max > bestCell.d + precision) cellQueue.push(cell);
 
@@ -81,28 +86,48 @@ export default function polylabel(polygon, precision = 1.0, debug = false) {
     return result;
 }
 
-function Cell(x, y, h, polygon) {
+// pre-flatten polygon rings into flat arrays [x0,y0,x1,y1,...] for faster iteration
+function flattenPolygon(polygon) {
+    const flatPolygon = new Array(polygon.length);
+    for (let ringIndex = 0; ringIndex < polygon.length; ringIndex++) {
+        const ring = polygon[ringIndex];
+        const flatRing = new Float64Array(ring.length * 2);
+        for (let i = 0; i < ring.length; i++) {
+            flatRing[i * 2] = ring[i][0];
+            flatRing[i * 2 + 1] = ring[i][1];
+        }
+        flatPolygon[ringIndex] = flatRing;
+    }
+    return flatPolygon;
+}
+
+function Cell(x, y, h, flatPolygon) {
     this.x = x; // cell center x
     this.y = y; // cell center y
     this.h = h; // half the cell size
-    this.d = pointToPolygonDist(x, y, polygon); // distance from cell center to polygon
+    this.d = pointToPolygonDist(x, y, flatPolygon); // distance from cell center to polygon
     this.max = this.d + this.h * Math.SQRT2; // max distance to polygon within a cell
 }
 
 // signed distance from point to polygon outline (negative if point is outside)
-function pointToPolygonDist(x, y, polygon) {
+function pointToPolygonDist(x, y, flatPolygon) {
     let inside = false;
     let minDistSq = Infinity;
 
-    for (const ring of polygon) {
-        for (let i = 0, len = ring.length, j = len - 1; i < len; j = i++) {
-            const a = ring[i];
-            const b = ring[j];
+    for (const ring of flatPolygon) {
+        const len = ring.length;
+        let bx = ring[len - 2];
+        let by = ring[len - 1];
+        for (let k = 0; k < len; k += 2) {
+            const ax = ring[k];
+            const ay = ring[k + 1];
 
-            if ((a[1] > y !== b[1] > y) &&
-                (x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0])) inside = !inside;
+            if ((ay > y !== by > y) &&
+                (x < (bx - ax) * (y - ay) / (by - ay) + ax)) inside = !inside;
 
-            minDistSq = Math.min(minDistSq, getSegDistSq(x, y, a, b));
+            minDistSq = Math.min(minDistSq, getSegDistSq(x, y, ax, ay, bx, by));
+            bx = ax;
+            by = ay;
         }
     }
 
@@ -110,38 +135,40 @@ function pointToPolygonDist(x, y, polygon) {
 }
 
 // get polygon centroid
-function getCentroidCell(polygon) {
+function getCentroidCell(flatPolygon) {
     let area = 0;
     let x = 0;
     let y = 0;
-    const points = polygon[0];
+    const points = flatPolygon[0];
 
-    for (let i = 0, len = points.length, j = len - 1; i < len; j = i++) {
-        const a = points[i];
-        const b = points[j];
-        const f = a[0] * b[1] - b[0] * a[1];
-        x += (a[0] + b[0]) * f;
-        y += (a[1] + b[1]) * f;
+    for (let i = 0, len = points.length, j = len - 2; i < len; j = i, i += 2) {
+        const ax = points[i];
+        const ay = points[i + 1];
+        const bx = points[j];
+        const by = points[j + 1];
+        const f = ax * by - bx * ay;
+        x += (ax + bx) * f;
+        y += (ay + by) * f;
         area += f * 3;
     }
-    const centroid = new Cell(x / area, y / area, 0, polygon);
-    if (area === 0 || centroid.d < 0) return new Cell(points[0][0], points[0][1], 0, polygon);
+    const centroid = new Cell(x / area, y / area, 0, flatPolygon);
+    if (area === 0 || centroid.d < 0) return new Cell(points[0], points[1], 0, flatPolygon);
     return centroid;
 }
 
 // get squared distance from a point to a segment
-function getSegDistSq(px, py, a, b) {
-    let x = a[0];
-    let y = a[1];
-    let dx = b[0] - x;
-    let dy = b[1] - y;
+function getSegDistSq(px, py, ax, ay, bx, by) {
+    let x = ax;
+    let y = ay;
+    let dx = bx - x;
+    let dy = by - y;
 
     if (dx !== 0 || dy !== 0) {
         const t = ((px - x) * dx + (py - y) * dy) / (dx * dx + dy * dy);
 
         if (t > 1) {
-            x = b[0];
-            y = b[1];
+            x = bx;
+            y = by;
 
         } else if (t > 0) {
             x += dx * t;
