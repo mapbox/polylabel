@@ -60,4 +60,5 @@ are available via `npm install --save @types/polylabel`.
 - [ruby-polylabel](https://github.com/fredplante/ruby-polylabel) (Ruby)
 - [Polylabel.jl](https://github.com/asinghvi17/Polylabel.jl) (Julia)
 - [geobase](https://github.com/navibyte/geospatial/blob/main/dart/geobase/lib/src/geometric/cartesian/areal/polylabel.dart) (Dart)
+- [PolylabelNet](https://github.com/oberbichler/PolylabelNet) (C#)
 - [polylabel-geometrynodes](https://github.com/farukahmet/polylabel-geometrynodes) (Blender)
