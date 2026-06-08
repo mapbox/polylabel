@@ -48,20 +48,6 @@ Be careful to pick precision appropriate for the input units. E.g. in case of ge
 [TypeScript type definitions](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/polylabel)
 are available via `npm install --save @types/polylabel`.
 
-### C++ Usage
-
-It is recommended to install polylabel via [mason](https://github.com/mapbox/mason). You will also need to install its dependencies: [geometry.hpp](https://github.com/mapbox/geometry.hpp) and [variant](https://github.com/mapbox/variant).
-
-```C++
-#include <mapbox/polylabel.hpp>
-
-int main() {
-    mapbox::geometry::polygon<double> polygon = readPolygon(); // Get polygon data from somewhere.
-    mapbox::geometry::point<double> p = mapbox::polylabel(polygon, 1.0);
-    return 0;
-}
-```
-
 #### Ports to other languages
 
 - [andrewharvey/geojson-polygon-labels](https://github.com/andrewharvey/geojson-polygon-labels) (CLI) 
@@ -75,3 +61,4 @@ int main() {
 - [Polylabel.jl](https://github.com/asinghvi17/Polylabel.jl) (Julia)
 - [geobase](https://github.com/navibyte/geospatial/blob/main/dart/geobase/lib/src/geometric/cartesian/areal/polylabel.dart) (Dart)
 - [PolylabelNet](https://github.com/oberbichler/PolylabelNet) (C#)
+- [polylabel-geometrynodes](https://github.com/farukahmet/polylabel-geometrynodes) (Blender)
