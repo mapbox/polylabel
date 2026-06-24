@@ -1,6 +1,6 @@
 {
   "name": "polylabel",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "A JS library for finding optimal label position inside a polygon",
   "keywords": [
     "polygon",
@@ -30,5 +30,8 @@
     "url": "https://github.com/mapbox/polylabel.git"
   },
   "author": "Vladimir Agafonkin",
-  "license": "ISC"
+  "license": "ISC",
+  "publishConfig": {
+    "access": "public"
+  }
 }
