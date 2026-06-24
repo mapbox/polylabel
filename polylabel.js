@@ -30,25 +30,24 @@ export default function polylabel(polygon, precision = 1.0, debug = false) {
     let numPoints = 0;
     for (const ring of polygon) numPoints += ring.length;
     const coords = new Float64Array(numPoints * 2);
-    const ringIndices = []; // [start, end) pairs into coords for each ring
+    const ringEnds = []; // end offset into coords for each ring (start = previous end, or 0)
     let c = 0;
     for (const ring of polygon) {
-        const start = c;
         for (let i = 0; i < ring.length; i++) {
             coords[c++] = ring[i][0];
             coords[c++] = ring[i][1];
         }
-        ringIndices.push(start, c);
+        ringEnds.push(c);
     }
 
     // a priority queue of cells in order of their "potential" (max distance to polygon)
     const cellQueue = new Queue([], (a, b) => b.max - a.max);
 
     // take centroid as the first best guess
-    let bestCell = getCentroidCell(polygon, coords, ringIndices);
+    let bestCell = getCentroidCell(coords, ringEnds);
 
     // second guess: bounding box centroid
-    const bboxCell = new Cell(minX + width / 2, minY + height / 2, 0, coords, ringIndices, -Infinity, null);
+    const bboxCell = new Cell(minX + width / 2, minY + height / 2, 0, coords, ringEnds, -Infinity, null);
     if (bboxCell.d > bestCell.d) bestCell = bboxCell;
 
     let numProbes = 2;
@@ -58,7 +57,7 @@ export default function polylabel(polygon, precision = 1.0, debug = false) {
         // worth subdividing (max = d + h·√2 > bestCell.d + precision). Both fail
         // once d ≤ threshold, so the distance scan can bail there early.
         const threshold = bestCell.d - Math.max(0, h * Math.SQRT2 - precision);
-        const cell = new Cell(x, y, h, coords, ringIndices, threshold, seed);
+        const cell = new Cell(x, y, h, coords, ringEnds, threshold, seed);
         numProbes++;
         if (cell.max > bestCell.d + precision) cellQueue.push(cell);
 
@@ -101,14 +100,14 @@ export default function polylabel(polygon, precision = 1.0, debug = false) {
     return result;
 }
 
-function Cell(x, y, h, coords, ringIndices, maxD, seed) {
+function Cell(x, y, h, coords, ringEnds, maxD, seed) {
     this.x = x; // cell center x
     this.y = y; // cell center y
     this.h = h; // half the cell size
     // nsx1..nsy2 hold the nearest segment found below, so child cells can seed
     // their scan with it (a child is almost always nearest to the same segment)
     this.nsx1 = 0; this.nsy1 = 0; this.nsx2 = 0; this.nsy2 = 0;
-    this.d = pointToPolygonDist(this, coords, ringIndices, maxD, seed); // distance from cell center to polygon
+    this.d = pointToPolygonDist(this, coords, ringEnds, maxD, seed); // distance from cell center to polygon
     this.max = this.d + h * Math.SQRT2; // max distance to polygon within a cell
 }
 
@@ -119,7 +118,7 @@ function Cell(x, y, h, coords, ringIndices, maxD, seed) {
 // determined such a cell can't beat the best. seed is the parent cell (or null);
 // its nearest segment is checked first so boundary cells reach the early-out
 // threshold without scanning the whole outline.
-function pointToPolygonDist(cell, coords, ringIndices, maxD, seed) {
+function pointToPolygonDist(cell, coords, ringEnds, maxD, seed) {
     const x = cell.x;
     const y = cell.y;
     let inside = false;
@@ -132,9 +131,9 @@ function pointToPolygonDist(cell, coords, ringIndices, maxD, seed) {
         if (minDistSq <= thresholdSq) return maxD;
     }
 
-    for (let r = 0; r < ringIndices.length; r += 2) {
-        const start = ringIndices[r];
-        const end = ringIndices[r + 1];
+    let start = 0;
+    for (let r = 0; r < ringEnds.length; r++) {
+        const end = ringEnds[r];
 
         // previous vertex (b), starting from the last point in the ring
         let bx = coords[end - 2];
@@ -160,28 +159,31 @@ function pointToPolygonDist(cell, coords, ringIndices, maxD, seed) {
             bx = ax;
             by = ay;
         }
+        start = end;
     }
 
     return minDistSq === 0 ? 0 : (inside ? 1 : -1) * Math.sqrt(minDistSq);
 }
 
-// get polygon centroid
-function getCentroidCell(polygon, coords, ringIndices) {
+// get polygon centroid (over the outer ring, coords[0..ringEnds[0]))
+function getCentroidCell(coords, ringEnds) {
     let area = 0;
     let x = 0;
     let y = 0;
-    const points = polygon[0];
+    const end = ringEnds[0];
 
-    for (let i = 0, len = points.length, j = len - 1; i < len; j = i++) {
-        const a = points[i];
-        const b = points[j];
-        const f = a[0] * b[1] - b[0] * a[1];
-        x += (a[0] + b[0]) * f;
-        y += (a[1] + b[1]) * f;
+    for (let i = 0, j = end - 2; i < end; j = i, i += 2) {
+        const ax = coords[i];
+        const ay = coords[i + 1];
+        const bx = coords[j];
+        const by = coords[j + 1];
+        const f = ax * by - bx * ay;
+        x += (ax + bx) * f;
+        y += (ay + by) * f;
         area += f * 3;
     }
-    const centroid = new Cell(x / area, y / area, 0, coords, ringIndices, -Infinity, null);
-    if (area === 0 || centroid.d < 0) return new Cell(points[0][0], points[0][1], 0, coords, ringIndices, -Infinity, null);
+    const centroid = new Cell(x / area, y / area, 0, coords, ringEnds, -Infinity, null);
+    if (area === 0 || centroid.d < 0) return new Cell(coords[0], coords[1], 0, coords, ringEnds, -Infinity, null);
     return centroid;
 }
 
