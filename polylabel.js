@@ -1,6 +1,9 @@
 
 import Queue from 'tinyqueue';
 
+// number of consecutive edges grouped under a single bounding box for block-skip
+const K = 32;
+
 export default function polylabel(polygon, precision = 1.0, debug = false) {
     // find the bounding box of the outer ring
     let minX = Infinity;
@@ -40,14 +43,16 @@ export default function polylabel(polygon, precision = 1.0, debug = false) {
         ringEnds.push(c);
     }
 
+    const blocks = buildBlocks(coords, ringEnds);
+
     // a priority queue of cells in order of their "potential" (max distance to polygon)
     const cellQueue = new Queue([], (a, b) => b.max - a.max);
 
     // take centroid as the first best guess
-    let bestCell = getCentroidCell(coords, ringEnds);
+    let bestCell = getCentroidCell(coords, ringEnds, blocks);
 
     // second guess: bounding box centroid
-    const bboxCell = new Cell(minX + width / 2, minY + height / 2, 0, coords, ringEnds, -Infinity, null);
+    const bboxCell = new Cell(minX + width / 2, minY + height / 2, 0, coords, ringEnds, blocks, -Infinity, null);
     if (bboxCell.d > bestCell.d) bestCell = bboxCell;
 
     let numProbes = 2;
@@ -57,7 +62,7 @@ export default function polylabel(polygon, precision = 1.0, debug = false) {
         // worth subdividing (max = d + h·√2 > bestCell.d + precision). Both fail
         // once d ≤ threshold, so the distance scan can bail there early.
         const threshold = bestCell.d - Math.max(0, h * Math.SQRT2 - precision);
-        const cell = new Cell(x, y, h, coords, ringEnds, threshold, seed);
+        const cell = new Cell(x, y, h, coords, ringEnds, blocks, threshold, seed);
         numProbes++;
         if (cell.max > bestCell.d + precision) cellQueue.push(cell);
 
@@ -100,14 +105,14 @@ export default function polylabel(polygon, precision = 1.0, debug = false) {
     return result;
 }
 
-function Cell(x, y, h, coords, ringEnds, maxD, seed) {
+function Cell(x, y, h, coords, ringEnds, blocks, maxD, seed) {
     this.x = x; // cell center x
     this.y = y; // cell center y
     this.h = h; // half the cell size
     // nsx1..nsy2 hold the nearest segment found below, so child cells can seed
     // their scan with it (a child is almost always nearest to the same segment)
     this.nsx1 = 0; this.nsy1 = 0; this.nsx2 = 0; this.nsy2 = 0;
-    this.d = pointToPolygonDist(this, coords, ringEnds, maxD, seed); // distance from cell center to polygon
+    this.d = pointToPolygonDist(this, coords, ringEnds, blocks, maxD, seed); // distance from cell center to polygon
     this.max = this.d + h * Math.SQRT2; // max distance to polygon within a cell
 }
 
@@ -118,7 +123,7 @@ function Cell(x, y, h, coords, ringEnds, maxD, seed) {
 // determined such a cell can't beat the best. seed is the parent cell (or null);
 // its nearest segment is checked first so boundary cells reach the early-out
 // threshold without scanning the whole outline.
-function pointToPolygonDist(cell, coords, ringEnds, maxD, seed) {
+function pointToPolygonDist(cell, coords, ringEnds, blocks, maxD, seed) {
     const x = cell.x;
     const y = cell.y;
     let inside = false;
@@ -131,42 +136,108 @@ function pointToPolygonDist(cell, coords, ringEnds, maxD, seed) {
         if (minDistSq <= thresholdSq) return maxD;
     }
 
-    let start = 0;
-    for (let r = 0; r < ringEnds.length; r++) {
-        const end = ringEnds[r];
+    const stride = K * 2;
+    const numRings = ringEnds.length;
+    let g = 0; // running block index into bboxes
+    let ringStart = 0;
 
-        // previous vertex (b), starting from the last point in the ring
-        let bx = coords[end - 2];
-        let by = coords[end - 1];
+    for (let r = 0; r < numRings; r++) {
+        const ringEnd = ringEnds[r];
 
-        for (let i = start; i < end; i += 2) {
-            const ax = coords[i];
-            const ay = coords[i + 1];
+        // previous vertex (b), starting from the last point in the ring; carried
+        // across blocks so each block's first edge connects to the prior vertex
+        let bx = coords[ringEnd - 2];
+        let by = coords[ringEnd - 1];
 
-            if ((ay > y !== by > y) &&
-                (x < (bx - ax) * (y - ay) / (by - ay) + ax)) inside = !inside;
+        for (let s = ringStart; s < ringEnd; s += stride, g += 4) {
+            let end = s + stride;
+            if (end > ringEnd) end = ringEnd;
+            const bminX = blocks[g], bminY = blocks[g + 1], bmaxX = blocks[g + 2], bmaxY = blocks[g + 3];
 
-            const distSq = getSegDistSq(x, y, ax, ay, bx, by);
-            if (distSq < minDistSq) {
-                minDistSq = distSq;
-                cell.nsx1 = ax; cell.nsy1 = ay; cell.nsx2 = bx; cell.nsy2 = by;
+            // lower bound on the distance from (x, y) to any edge in this block
+            const dx = x < bminX ? bminX - x : x > bmaxX ? x - bmaxX : 0;
+            const dy = y < bminY ? bminY - y : y > bmaxY ? y - bmaxY : 0;
+            const skipDist = dx * dx + dy * dy >= minDistSq;
 
-                // the point is already close enough to the outline that this cell
-                // can't possibly contain a better label position — stop scanning
-                if (minDistSq <= thresholdSq) return maxD;
+            // this block's edges can only flip ray-cast parity if its bbox straddles
+            // y and extends right of x; else no edge crosses the rightward ray
+            const skipCross = y < bminY || y >= bmaxY || x > bmaxX;
+
+            if (skipDist && skipCross) {
+                bx = coords[end - 2];
+                by = coords[end - 1];
+                continue;
             }
 
-            bx = ax;
-            by = ay;
+            for (let i = s; i < end; i += 2) {
+                const ax = coords[i];
+                const ay = coords[i + 1];
+
+                if (!skipCross && (ay > y !== by > y) &&
+                    (x < (bx - ax) * (y - ay) / (by - ay) + ax)) inside = !inside;
+
+                if (!skipDist) {
+                    const distSq = getSegDistSq(x, y, ax, ay, bx, by);
+                    if (distSq < minDistSq) {
+                        minDistSq = distSq;
+                        cell.nsx1 = ax; cell.nsy1 = ay; cell.nsx2 = bx; cell.nsy2 = by;
+
+                        // the point is already close enough to the outline that this cell
+                        // can't possibly contain a better label position — stop scanning
+                        if (minDistSq <= thresholdSq) return maxD;
+                    }
+                }
+
+                bx = ax;
+                by = ay;
+            }
         }
-        start = end;
+        ringStart = ringEnd;
     }
 
     return minDistSq === 0 ? 0 : (inside ? 1 : -1) * Math.sqrt(minDistSq);
 }
 
+// precompute one bounding box per block of K consecutive edges (over both
+// endpoints of every edge in it) so the distance scan can skip whole blocks in
+// O(1). The block layout mirrors the flattened coords/ringEnds and is re-derived
+// in the scan, so only the bboxes need storing: a flat [minX,minY,maxX,maxY] run
+// per block, sized upfront from the ring lengths.
+function buildBlocks(coords, ringEnds) {
+    const stride = K * 2;
+    let numBlocks = 0;
+    let ringStart = 0;
+    for (let r = 0; r < ringEnds.length; r++) {
+        numBlocks += Math.ceil((ringEnds[r] - ringStart) / stride);
+        ringStart = ringEnds[r];
+    }
+
+    const blocks = new Float64Array(numBlocks * 4);
+    let g = 0;
+    ringStart = 0;
+    for (let r = 0; r < ringEnds.length; r++) {
+        const ringEnd = ringEnds[r];
+        for (let s = ringStart; s < ringEnd; s += stride, g += 4) {
+            const end = s + stride < ringEnd ? s + stride : ringEnd;
+            const prev = s === ringStart ? ringEnd - 2 : s - 2;
+
+            let minX = coords[prev], minY = coords[prev + 1];
+            let maxX = minX, maxY = minY;
+            for (let i = s; i < end; i += 2) {
+                const px = coords[i], py = coords[i + 1];
+                if (px < minX) minX = px; else if (px > maxX) maxX = px;
+                if (py < minY) minY = py; else if (py > maxY) maxY = py;
+            }
+            blocks[g] = minX; blocks[g + 1] = minY; blocks[g + 2] = maxX; blocks[g + 3] = maxY;
+        }
+        ringStart = ringEnd;
+    }
+
+    return blocks;
+}
+
 // get polygon centroid (over the outer ring, coords[0..ringEnds[0]))
-function getCentroidCell(coords, ringEnds) {
+function getCentroidCell(coords, ringEnds, blocks) {
     let area = 0;
     let x = 0;
     let y = 0;
@@ -182,8 +253,8 @@ function getCentroidCell(coords, ringEnds) {
         y += (ay + by) * f;
         area += f * 3;
     }
-    const centroid = new Cell(x / area, y / area, 0, coords, ringEnds, -Infinity, null);
-    if (area === 0 || centroid.d < 0) return new Cell(coords[0], coords[1], 0, coords, ringEnds, -Infinity, null);
+    const centroid = new Cell(x / area, y / area, 0, coords, ringEnds, blocks, -Infinity, null);
+    if (area === 0 || centroid.d < 0) return new Cell(coords[0], coords[1], 0, coords, ringEnds, blocks, -Infinity, null);
     return centroid;
 }
 
