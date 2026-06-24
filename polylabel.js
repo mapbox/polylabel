@@ -25,20 +25,40 @@ export default function polylabel(polygon, precision = 1.0, debug = false) {
         return result;
     }
 
+    // flatten the polygon rings into a single contiguous coordinate buffer for
+    // cache-friendly, pointer-chase-free access in the hot distance loop
+    let numPoints = 0;
+    for (const ring of polygon) numPoints += ring.length;
+    const coords = new Float64Array(numPoints * 2);
+    const ringIndices = []; // [start, end) pairs into coords for each ring
+    let c = 0;
+    for (const ring of polygon) {
+        const start = c;
+        for (let i = 0; i < ring.length; i++) {
+            coords[c++] = ring[i][0];
+            coords[c++] = ring[i][1];
+        }
+        ringIndices.push(start, c);
+    }
+
     // a priority queue of cells in order of their "potential" (max distance to polygon)
     const cellQueue = new Queue([], (a, b) => b.max - a.max);
 
     // take centroid as the first best guess
-    let bestCell = getCentroidCell(polygon);
+    let bestCell = getCentroidCell(polygon, coords, ringIndices);
 
     // second guess: bounding box centroid
-    const bboxCell = new Cell(minX + width / 2, minY + height / 2, 0, polygon);
+    const bboxCell = new Cell(minX + width / 2, minY + height / 2, 0, coords, ringIndices, -Infinity, null);
     if (bboxCell.d > bestCell.d) bestCell = bboxCell;
 
     let numProbes = 2;
 
-    function potentiallyQueue(x, y, h) {
-        const cell = new Cell(x, y, h, polygon);
+    function potentiallyQueue(x, y, h, seed) {
+        // a cell is only useful if it can beat the best (d > bestCell.d) or is
+        // worth subdividing (max = d + h·√2 > bestCell.d + precision). Both fail
+        // once d ≤ threshold, so the distance scan can bail there early.
+        const threshold = bestCell.d - Math.max(0, h * Math.SQRT2 - precision);
+        const cell = new Cell(x, y, h, coords, ringIndices, threshold, seed);
         numProbes++;
         if (cell.max > bestCell.d + precision) cellQueue.push(cell);
 
@@ -53,23 +73,23 @@ export default function polylabel(polygon, precision = 1.0, debug = false) {
     let h = cellSize / 2;
     for (let x = minX; x < maxX; x += cellSize) {
         for (let y = minY; y < maxY; y += cellSize) {
-            potentiallyQueue(x + h, y + h, h);
+            potentiallyQueue(x + h, y + h, h, null);
         }
     }
 
     while (cellQueue.length) {
         // pick the most promising cell from the queue
-        const {max, x, y, h: ch} = cellQueue.pop();
+        const cell = cellQueue.pop();
 
         // do not drill down further if there's no chance of a better solution
-        if (max - bestCell.d <= precision) break;
+        if (cell.max - bestCell.d <= precision) break;
 
-        // split the cell into four cells
-        h = ch / 2;
-        potentiallyQueue(x - h, y - h, h);
-        potentiallyQueue(x + h, y - h, h);
-        potentiallyQueue(x - h, y + h, h);
-        potentiallyQueue(x + h, y + h, h);
+        // split the cell into four cells, seeding each with the parent's nearest segment
+        h = cell.h / 2;
+        potentiallyQueue(cell.x - h, cell.y - h, h, cell);
+        potentiallyQueue(cell.x + h, cell.y - h, h, cell);
+        potentiallyQueue(cell.x - h, cell.y + h, h, cell);
+        potentiallyQueue(cell.x + h, cell.y + h, h, cell);
     }
 
     if (debug) {
@@ -81,28 +101,65 @@ export default function polylabel(polygon, precision = 1.0, debug = false) {
     return result;
 }
 
-function Cell(x, y, h, polygon) {
+// coordinates of the segment found nearest in the last pointToPolygonDist call,
+// used to seed the scan of refined child cells (a child is almost always nearest
+// to the same segment as its parent)
+let nsx1 = 0, nsy1 = 0, nsx2 = 0, nsy2 = 0;
+
+function Cell(x, y, h, coords, ringIndices, maxD, seed) {
     this.x = x; // cell center x
     this.y = y; // cell center y
     this.h = h; // half the cell size
-    this.d = pointToPolygonDist(x, y, polygon); // distance from cell center to polygon
+    this.d = pointToPolygonDist(x, y, coords, ringIndices, maxD, seed); // distance from cell center to polygon
+    // remember the nearest segment so child cells can seed their scan with it
+    this.nsx1 = nsx1; this.nsy1 = nsy1; this.nsx2 = nsx2; this.nsy2 = nsy2;
     this.max = this.d + this.h * Math.SQRT2; // max distance to polygon within a cell
 }
 
-// signed distance from point to polygon outline (negative if point is outside)
-function pointToPolygonDist(x, y, polygon) {
+// signed distance from point to polygon outline (negative if point is outside).
+// maxD is a distance threshold: if a partial result proves the point is no
+// farther than maxD from the outline, the scan bails out early and returns maxD,
+// since the caller has already determined such a cell can't beat the best.
+// seed is the parent cell (or null); its nearest segment is checked first so
+// boundary cells reach the early-out threshold without scanning the whole outline.
+function pointToPolygonDist(x, y, coords, ringIndices, maxD, seed) {
     let inside = false;
     let minDistSq = Infinity;
+    const thresholdSq = maxD > 0 ? maxD * maxD : -1;
 
-    for (const ring of polygon) {
-        for (let i = 0, len = ring.length, j = len - 1; i < len; j = i++) {
-            const a = ring[i];
-            const b = ring[j];
+    if (seed !== null) {
+        nsx1 = seed.nsx1; nsy1 = seed.nsy1; nsx2 = seed.nsx2; nsy2 = seed.nsy2;
+        minDistSq = getSegDistSq(x, y, nsx1, nsy1, nsx2, nsy2);
+        if (minDistSq <= thresholdSq) return maxD;
+    }
 
-            if ((a[1] > y !== b[1] > y) &&
-                (x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0])) inside = !inside;
+    for (let r = 0; r < ringIndices.length; r += 2) {
+        const start = ringIndices[r];
+        const end = ringIndices[r + 1];
 
-            minDistSq = Math.min(minDistSq, getSegDistSq(x, y, a, b));
+        // previous vertex (b), starting from the last point in the ring
+        let bx = coords[end - 2];
+        let by = coords[end - 1];
+
+        for (let i = start; i < end; i += 2) {
+            const ax = coords[i];
+            const ay = coords[i + 1];
+
+            if ((ay > y !== by > y) &&
+                (x < (bx - ax) * (y - ay) / (by - ay) + ax)) inside = !inside;
+
+            const distSq = getSegDistSq(x, y, ax, ay, bx, by);
+            if (distSq < minDistSq) {
+                minDistSq = distSq;
+                nsx1 = ax; nsy1 = ay; nsx2 = bx; nsy2 = by;
+
+                // the point is already close enough to the outline that this cell
+                // can't possibly contain a better label position — stop scanning
+                if (minDistSq <= thresholdSq) return maxD;
+            }
+
+            bx = ax;
+            by = ay;
         }
     }
 
@@ -110,7 +167,7 @@ function pointToPolygonDist(x, y, polygon) {
 }
 
 // get polygon centroid
-function getCentroidCell(polygon) {
+function getCentroidCell(polygon, coords, ringIndices) {
     let area = 0;
     let x = 0;
     let y = 0;
@@ -124,24 +181,22 @@ function getCentroidCell(polygon) {
         y += (a[1] + b[1]) * f;
         area += f * 3;
     }
-    const centroid = new Cell(x / area, y / area, 0, polygon);
-    if (area === 0 || centroid.d < 0) return new Cell(points[0][0], points[0][1], 0, polygon);
+    const centroid = new Cell(x / area, y / area, 0, coords, ringIndices, -Infinity, null);
+    if (area === 0 || centroid.d < 0) return new Cell(points[0][0], points[0][1], 0, coords, ringIndices, -Infinity, null);
     return centroid;
 }
 
 // get squared distance from a point to a segment
-function getSegDistSq(px, py, a, b) {
-    let x = a[0];
-    let y = a[1];
-    let dx = b[0] - x;
-    let dy = b[1] - y;
+function getSegDistSq(px, py, x, y, bx, by) {
+    let dx = bx - x;
+    let dy = by - y;
 
     if (dx !== 0 || dy !== 0) {
         const t = ((px - x) * dx + (py - y) * dy) / (dx * dx + dy * dy);
 
         if (t > 1) {
-            x = b[0];
-            y = b[1];
+            x = bx;
+            y = by;
 
         } else if (t > 0) {
             x += dx * t;
