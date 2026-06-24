@@ -101,35 +101,34 @@ export default function polylabel(polygon, precision = 1.0, debug = false) {
     return result;
 }
 
-// coordinates of the segment found nearest in the last pointToPolygonDist call,
-// used to seed the scan of refined child cells (a child is almost always nearest
-// to the same segment as its parent)
-let nsx1 = 0, nsy1 = 0, nsx2 = 0, nsy2 = 0;
-
 function Cell(x, y, h, coords, ringIndices, maxD, seed) {
     this.x = x; // cell center x
     this.y = y; // cell center y
     this.h = h; // half the cell size
-    this.d = pointToPolygonDist(x, y, coords, ringIndices, maxD, seed); // distance from cell center to polygon
-    // remember the nearest segment so child cells can seed their scan with it
-    this.nsx1 = nsx1; this.nsy1 = nsy1; this.nsx2 = nsx2; this.nsy2 = nsy2;
-    this.max = this.d + this.h * Math.SQRT2; // max distance to polygon within a cell
+    // nsx1..nsy2 hold the nearest segment found below, so child cells can seed
+    // their scan with it (a child is almost always nearest to the same segment)
+    this.nsx1 = 0; this.nsy1 = 0; this.nsx2 = 0; this.nsy2 = 0;
+    this.d = pointToPolygonDist(this, coords, ringIndices, maxD, seed); // distance from cell center to polygon
+    this.max = this.d + h * Math.SQRT2; // max distance to polygon within a cell
 }
 
-// signed distance from point to polygon outline (negative if point is outside).
-// maxD is a distance threshold: if a partial result proves the point is no
-// farther than maxD from the outline, the scan bails out early and returns maxD,
-// since the caller has already determined such a cell can't beat the best.
-// seed is the parent cell (or null); its nearest segment is checked first so
-// boundary cells reach the early-out threshold without scanning the whole outline.
-function pointToPolygonDist(x, y, coords, ringIndices, maxD, seed) {
+// signed distance from cell center to polygon outline (negative if outside),
+// also recording the nearest segment on the cell. maxD is a distance threshold:
+// if a partial result proves the center is no farther than maxD from the outline,
+// the scan bails out early and returns maxD, since the caller has already
+// determined such a cell can't beat the best. seed is the parent cell (or null);
+// its nearest segment is checked first so boundary cells reach the early-out
+// threshold without scanning the whole outline.
+function pointToPolygonDist(cell, coords, ringIndices, maxD, seed) {
+    const x = cell.x;
+    const y = cell.y;
     let inside = false;
     let minDistSq = Infinity;
     const thresholdSq = maxD > 0 ? maxD * maxD : -1;
 
     if (seed !== null) {
-        nsx1 = seed.nsx1; nsy1 = seed.nsy1; nsx2 = seed.nsx2; nsy2 = seed.nsy2;
-        minDistSq = getSegDistSq(x, y, nsx1, nsy1, nsx2, nsy2);
+        cell.nsx1 = seed.nsx1; cell.nsy1 = seed.nsy1; cell.nsx2 = seed.nsx2; cell.nsy2 = seed.nsy2;
+        minDistSq = getSegDistSq(x, y, seed.nsx1, seed.nsy1, seed.nsx2, seed.nsy2);
         if (minDistSq <= thresholdSq) return maxD;
     }
 
@@ -151,7 +150,7 @@ function pointToPolygonDist(x, y, coords, ringIndices, maxD, seed) {
             const distSq = getSegDistSq(x, y, ax, ay, bx, by);
             if (distSq < minDistSq) {
                 minDistSq = distSq;
-                nsx1 = ax; nsy1 = ay; nsx2 = bx; nsy2 = by;
+                cell.nsx1 = ax; cell.nsy1 = ay; cell.nsx2 = bx; cell.nsy2 = by;
 
                 // the point is already close enough to the outline that this cell
                 // can't possibly contain a better label position — stop scanning
