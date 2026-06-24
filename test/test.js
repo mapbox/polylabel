@@ -1,10 +1,8 @@
 import polylabel from '../polylabel.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'fs';
-
-const water1 = JSON.parse(readFileSync(new URL('fixtures/water1.json', import.meta.url)));
-const water2 = JSON.parse(readFileSync(new URL('fixtures/water2.json', import.meta.url)));
+import water1 from './fixtures/water1.json' with {type: 'json'};
+import water2 from './fixtures/water2.json' with {type: 'json'};
 
 test('finds pole of inaccessibility for water1 and precision 1', () => {
     const p = polylabel(water1, 1);
