@@ -57,6 +57,15 @@ export default function polylabel(polygon, precision = 1.0, debug = false) {
 
     let numProbes = 2;
 
+    // Certify thin polygons before allocating the initial grid. The certificate
+    // checks the original edges, not distance-scan cutoff values.
+    if (hasStripCertificate(bestCell, coords, ringEnds, width, height, precision)) {
+        if (debug) console.log(`num probes: ${numProbes}\nbest distance: ${bestCell.d}`);
+        const result = [bestCell.x, bestCell.y];
+        result.distance = bestCell.d;
+        return result;
+    }
+
     function potentiallyQueue(x, y, h, seed) {
         // a cell is only useful if it can beat the best (d > bestCell.d) or is
         // worth subdividing (max = d + h·√2 > bestCell.d + precision). Both fail
@@ -103,6 +112,132 @@ export default function polylabel(polygon, precision = 1.0, debug = false) {
     const result = [bestCell.x, bestCell.y];
     result.distance = bestCell.d;
     return result;
+}
+
+// A disk of radius r inside the polygon, and an enclosing strip of width at
+// most 2(r + precision), certify an epsilon-optimal center. Only attempt this
+// for elongated shapes; this heuristic affects performance, never correctness.
+function hasStripCertificate(cell, coords, ringEnds, width, height, precision) {
+    if (!(cell.d > 0 && precision > 0 && Math.max(width, height) > 8 * cell.d)) return false;
+
+    // Reserve some tolerance for rounding. This is only a trial radius: the
+    // edge checks below must prove that the entire disk is actually contained.
+    const r = roundDown(cell.d - precision / 4);
+    const limit = roundDown(r + precision);
+    if (!(r > 0) || !Number.isFinite(limit)) return false;
+
+    let nx = width <= height ? 1 : 0;
+    let ny = width <= height ? 0 : 1;
+    if (Math.min(width, height) / 2 > limit) {
+        // Sample at most 32 edges for a useful direction on rotated thin
+        // polygons. Any nonzero direction is valid; it need not be the normal
+        // of the longest edge. Bound this speculative work on large rings.
+        let longest = 0;
+        const step = 2 * Math.ceil(ringEnds[0] / 64);
+        for (let i = 0; i < ringEnds[0]; i += step) {
+            const j = i === 0 ? ringEnds[0] - 2 : i - 2;
+            const dx = coords[i] - coords[j];
+            const dy = coords[i + 1] - coords[j + 1];
+            const lengthSq = dx * dx + dy * dy;
+            if (lengthSq > longest) {
+                longest = lengthSq;
+                nx = -dy;
+                ny = dx;
+            }
+        }
+        const scale = Math.max(Math.abs(nx), Math.abs(ny));
+        nx /= scale;
+        ny /= scale;
+    }
+
+    // Cheaply reject a weak direction before doing interval arithmetic. This
+    // may decline a useful certificate near the threshold, but cannot accept
+    // one. A partial scan already suffices to reject a strip that is too wide.
+    const span = 2 * limit * Math.hypot(nx, ny);
+    let minProjection = Infinity;
+    let maxProjection = -Infinity;
+    for (let i = 0; i < ringEnds[0]; i += 2) {
+        const p = (coords[i] - cell.x) * nx + (coords[i + 1] - cell.y) * ny;
+        minProjection = Math.min(minProjection, p);
+        maxProjection = Math.max(maxProjection, p);
+        if (maxProjection - minProjection > span) return false;
+    }
+
+    // Outward-rounded projections enclose every outer edge. The squared test
+    // avoids sqrt: stripWidth^2 <= 4 * limit^2 * |normal|^2.
+    let min = Infinity;
+    let max = -Infinity;
+    for (let i = 0; i < ringEnds[0]; i += 2) {
+        const x = intervalDiff(coords[i], cell.x);
+        const y = intervalDiff(coords[i + 1], cell.y);
+        const px = intervalProduct(x, [nx, nx]);
+        const py = intervalProduct(y, [ny, ny]);
+        min = Math.min(min, roundDown(px[0] + py[0]));
+        max = Math.max(max, roundUp(px[1] + py[1]));
+    }
+    const stripWidth = roundUp(max - min);
+    const normalSq = roundDown(roundDown(nx * nx) + roundDown(ny * ny));
+    const stripSq = roundUp(stripWidth * stripWidth);
+    const limitSq = roundDown(roundDown(4 * roundDown(limit * limit)) * normalSq);
+    if (!(normalSq > 0 && stripSq <= limitSq) || !Number.isFinite(stripSq)) return false;
+
+    // Distance to an edge's infinite supporting line is a LOWER bound on
+    // distance to that segment. A successful check therefore covers all
+    // segments, including holes; a weak line bound simply declines the exit.
+    const radiusSq = roundUp(r * r);
+    let inside = false;
+    let start = 0;
+    for (const end of ringEnds) {
+        let hasEdge = false;
+        for (let i = start, j = end - 2; i < end; j = i, i += 2) {
+            const ax = coords[i], ay = coords[i + 1];
+            const bx = coords[j], by = coords[j + 1];
+            if (ax === bx && ay === by) continue;
+            hasEdge = true;
+            const dx = intervalDiff(bx, ax);
+            const dy = intervalDiff(by, ay);
+            const px = intervalDiff(cell.x, ax);
+            const py = intervalDiff(cell.y, ay);
+            const a = intervalProduct(dx, py);
+            const b = intervalProduct(dy, px);
+            const lo = roundDown(a[0] - b[1]);
+            const hi = roundUp(a[1] - b[0]);
+            const cross = lo > 0 ? lo : hi < 0 ? -hi : 0;
+            const ex = Math.max(Math.abs(dx[0]), Math.abs(dx[1]));
+            const ey = Math.max(Math.abs(dy[0]), Math.abs(dy[1]));
+            const edgeSq = roundUp(roundUp(ex * ex) + roundUp(ey * ey));
+            const lhs = roundDown(cross * cross);
+            const rhs = roundUp(radiusSq * edgeSq);
+            if (!(lhs >= rhs) || !Number.isFinite(lhs) || !Number.isFinite(rhs)) return false;
+
+            // The interval sign also certifies ray-crossing parity without
+            // division. It is unambiguous because a positive disk radius fits.
+            if ((ay > cell.y !== by > cell.y) && (lo > 0 === by > ay)) inside = !inside;
+        }
+        if (!hasEdge) return false;
+        start = end;
+    }
+    return inside;
+}
+
+// Expand each rounded basic operation by at least one adjacent binary64 value
+// (also at zero/subnormal values). NaN/overflow makes certification fail closed.
+function roundDown(x) {
+    return x - (Math.abs(x) * Number.EPSILON || Number.MIN_VALUE);
+}
+
+function roundUp(x) {
+    return x + (Math.abs(x) * Number.EPSILON || Number.MIN_VALUE);
+}
+
+function intervalDiff(a, b) {
+    const x = a - b;
+    return [roundDown(x), roundUp(x)];
+}
+
+function intervalProduct(a, b) {
+    const p = a[0] * b[0], q = a[0] * b[1], r = a[1] * b[0], s = a[1] * b[1];
+    return [roundDown(Math.min(p, q, r, s)), roundUp(Math.max(p, q, r, s))];
 }
 
 function Cell(x, y, h, coords, ringEnds, blocks, maxD, seed) {
